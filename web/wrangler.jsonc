@@ -22,8 +22,8 @@
   "triggers": { "crons": ["17 * * * *"] },
   "vars": {
     // Cloudflare Access team domain and application audience tag, from Zero Trust › Access › Applications.
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": "",
+    "ACCESS_TEAM_DOMAIN": "ghijk.cloudflareaccess.com",
+    "ACCESS_AUD": "e8a64e5f59804180845331bb9c6de528d489dca25ca23e96cd40af8140a723d7",
     // Must match the key prefix set in the Mac app, if any.
     "KEY_PREFIX": ""
   },
