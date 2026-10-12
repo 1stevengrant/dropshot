@@ -21,6 +21,15 @@ export async function viewableDrop(c: AppContext, id = c.req.param('id') ?? ''):
         return c.html(messagePage('Drop not found', 'This link doesn’t point to anything. It may have been deleted.'), 404);
     }
 
+    if (row.deleted_at !== null) {
+        // The owner can still open a trashed drop to restore it.
+        if (await isOwnerAnywhere(c.req.raw, c.env)) {
+            return row;
+        }
+
+        return c.html(messagePage('This drop has been deleted', 'Its owner removed it, so the link no longer works.'), 410);
+    }
+
     if (row.expires_at !== null && row.expires_at <= Date.now()) {
         return c.html(messagePage('This drop has expired', 'Its owner set it to self-destruct, and it’s gone.'), 410);
     }

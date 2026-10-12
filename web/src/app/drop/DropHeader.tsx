@@ -21,7 +21,7 @@ export function DropHeader({ drop, onMarkup, onDelete }: { drop: Drop; onMarkup:
                 </button>
             )}
             <button type="button" onClick={onDelete} className="btn btn-error btn-sm">
-                <Trash2 size={16} /> <span className="hidden sm:inline">Delete</span>
+                <Trash2 size={16} /> <span className="hidden sm:inline">{drop.deletedAt ? 'Delete forever' : 'Delete'}</span>
             </button>
         </header>
     );

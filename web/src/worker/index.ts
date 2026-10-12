@@ -14,6 +14,7 @@ import { linksApi } from './routes/linksApi';
 import { rawLink } from './routes/rawLink';
 import { tagsApi } from './routes/tagsApi';
 import { testUpload } from './routes/testUpload';
+import { trashApi } from './routes/trashApi';
 import { unlock } from './routes/unlock';
 import { uploadApi } from './routes/uploadApi';
 import { scheduled } from './scheduled';
@@ -28,7 +29,7 @@ app.use('/api/*', ownerOnly);
 app.route('/_import', importer);
 
 // Order matters: specific routes before the /:id catch-alls, and <id>+ before /:id.
-for (const router of [assets, dashboard, dropsApi, uploadApi, linksApi, tagsApi, boardsApi]) {
+for (const router of [assets, dashboard, dropsApi, trashApi, uploadApi, linksApi, tagsApi, boardsApi]) {
     app.route('/', router);
 }
 

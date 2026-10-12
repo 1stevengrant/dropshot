@@ -36,6 +36,7 @@ export function Library() {
         sort: (params.get('sort') as DropQuery['sort']) || 'created',
         dir: (params.get('dir') as DropQuery['dir']) || 'desc',
         page: Number(params.get('page')) || 1,
+        trash: params.get('trash') === '1' || undefined,
     };
 
     const drops = useQuery({ queryKey: ['drops', query], queryFn: () => api.drops(query), placeholderData: (previous) => previous });
@@ -49,7 +50,33 @@ export function Library() {
         mutationFn: api.remove,
         onSuccess: (_, ids) => {
             setSelected(new Set());
-            toast(`Deleted ${ids.length} drop${ids.length === 1 ? '' : 's'}`);
+            toast(`Moved ${ids.length} drop${ids.length === 1 ? '' : 's'} to the trash`);
+            refresh();
+        },
+    });
+
+    const restore = useMutation({
+        mutationFn: api.restore,
+        onSuccess: (_, ids) => {
+            setSelected(new Set());
+            toast(`Restored ${ids.length} drop${ids.length === 1 ? '' : 's'}`);
+            refresh();
+        },
+    });
+
+    const purge = useMutation({
+        mutationFn: api.purge,
+        onSuccess: (_, ids) => {
+            setSelected(new Set());
+            toast(`Deleted ${ids.length} drop${ids.length === 1 ? '' : 's'} forever`);
+            refresh();
+        },
+    });
+
+    const emptyTrash = useMutation({
+        mutationFn: api.emptyTrash,
+        onSuccess: ({ purged }) => {
+            toast(`Emptied the trash (${purged.toLocaleString()} drop${purged === 1 ? '' : 's'})`);
             refresh();
         },
     });
@@ -150,7 +177,7 @@ export function Library() {
 
     const allSelected = items.length > 0 && items.every((drop) => selected.has(drop.id));
     const activeBoard = boards.data?.find((board) => board.id === query.board);
-    const heading = activeBoard?.name ?? (query.tag ? `#${query.tag}` : kinds.find((kind) => kind.kind === query.kind)?.label ?? 'My drops');
+    const heading = query.trash ? 'Trash' : activeBoard?.name ?? (query.tag ? `#${query.tag}` : kinds.find((kind) => kind.kind === query.kind)?.label ?? 'My drops');
     const currentSort = sorts.find((sort) => sort.sort === query.sort && sort.dir === query.dir) ?? sorts[0];
 
     return (
@@ -184,6 +211,10 @@ export function Library() {
                             boards={boards.data ?? []}
                             onAddToBoard={(boardId) => addToBoard.mutate({ boardId, ids: [...selected] })}
                             onDelete={() => remove.mutateAsync([...selected])}
+                            trash={!!query.trash}
+                            onRestore={() => restore.mutateAsync([...selected])}
+                            onPurge={() => purge.mutateAsync([...selected])}
+                            onEmptyTrash={() => emptyTrash.mutateAsync()}
                             allSelected={allSelected}
                             onToggleAll={() => setSelected(allSelected ? new Set() : new Set(items.map((drop) => drop.id)))}
                             view={view}
@@ -195,6 +226,12 @@ export function Library() {
                 </div>
 
                 <main className="flex-1 px-6 py-6">
+                    {query.trash && (
+                        <div role="note" className="alert alert-soft mb-5 text-sm">
+                            Deleted drops stay here for 30 days, then they’re removed for good. Their links stop working while they’re in the trash.
+                        </div>
+                    )}
+
                     {uploading > 0 && (
                         <div role="status" className="alert alert-info alert-soft mb-4 py-2 text-sm"><span className="loading loading-spinner loading-sm" /> Uploading {uploading} file{uploading === 1 ? '' : 's'}…</div>
                     )}
@@ -211,6 +248,7 @@ export function Library() {
                             selected={selected}
                             onToggle={toggle}
                             onChooseFiles={() => fileInput.current?.click()}
+                            showUploadTile={!query.trash}
                         />
                     ) : drops.isPending ? (
                         <p className="py-10 text-center text-muted">Loading drops…</p>

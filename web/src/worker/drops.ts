@@ -25,8 +25,8 @@ export class Drops {
 
     /** The Mac app stores shortened links as a tiny HTML redirect; recover the destination from it. */
     async list(query: DropQuery, perPage = 48): Promise<DropPage> {
-        const where = ['(d.expires_at IS NULL OR d.expires_at > ?)'];
-        const bindings: unknown[] = [Date.now()];
+        const where = query.trash ? ['d.deleted_at IS NOT NULL'] : ['d.deleted_at IS NULL', '(d.expires_at IS NULL OR d.expires_at > ?)'];
+        const bindings: unknown[] = query.trash ? [] : [Date.now()];
 
         if (query.q) {
             where.push('(d.title LIKE ? OR d.filename LIKE ? OR d.target_url LIKE ? OR EXISTS (SELECT 1 FROM drop_tags t WHERE t.drop_id = d.id AND t.tag LIKE ?))');
@@ -49,7 +49,9 @@ export class Drops {
             bindings.push(query.board);
         }
 
-        const column = { created: 'd.created_at', size: 'd.size', views: 'd.views', title: 'd.title COLLATE NOCASE' }[query.sort ?? 'created'];
+        const column = query.trash && (query.sort ?? 'created') === 'created'
+            ? 'd.deleted_at'
+            : { created: 'd.created_at', size: 'd.size', views: 'd.views', title: 'd.title COLLATE NOCASE' }[query.sort ?? 'created'];
         const direction = query.dir === 'asc' ? 'ASC' : 'DESC';
 
         const page = Math.max(1, Math.floor(query.page ?? 1));
@@ -130,7 +132,38 @@ export class Drops {
         }
     }
 
-    async delete(ids: string[]): Promise<void> {
+    /** Moves drops to the trash: their links stop working at once, but files and metadata stay for 30 days. */
+    async trash(ids: string[]): Promise<void> {
+        if (!ids.length) {
+            return;
+        }
+
+        const placeholders = ids.map(() => '?').join(', ');
+
+        await this.env.DB.prepare(`UPDATE drops SET deleted_at = ? WHERE id IN (${placeholders}) AND deleted_at IS NULL`).bind(Date.now(), ...ids).run();
+    }
+
+    /** Brings drops back from the trash. A self-destructed drop comes back without its expiry, or it would vanish again. */
+    async restore(ids: string[]): Promise<void> {
+        if (!ids.length) {
+            return;
+        }
+
+        const placeholders = ids.map(() => '?').join(', ');
+
+        await this.env.DB.prepare(
+            `UPDATE drops SET deleted_at = NULL, expires_at = CASE WHEN expires_at <= ? THEN NULL ELSE expires_at END WHERE id IN (${placeholders})`,
+        ).bind(Date.now(), ...ids).run();
+    }
+
+    async trashCount(): Promise<number> {
+        const row = await this.env.DB.prepare('SELECT COUNT(*) AS count FROM drops WHERE deleted_at IS NOT NULL').first<{ count: number }>();
+
+        return row?.count ?? 0;
+    }
+
+    /** Permanently removes drops and their files. Only the trash and its 30 day clean-up call this. */
+    async purge(ids: string[]): Promise<void> {
         if (!ids.length) {
             return;
         }
@@ -147,12 +180,30 @@ export class Drops {
         ]);
     }
 
-    async purgeExpired(): Promise<number> {
-        const expired = await this.env.DB.prepare('SELECT id FROM drops WHERE expires_at IS NOT NULL AND expires_at <= ?').bind(Date.now()).all<{ id: string }>();
-        const ids = expired.results.map((row) => row.id);
+    /** Self-destructed drops go to the trash like deleted ones; their links already stopped at the expiry time. */
+    async trashExpired(): Promise<number> {
+        const result = await this.env.DB.prepare('UPDATE drops SET deleted_at = ? WHERE expires_at IS NOT NULL AND expires_at <= ? AND deleted_at IS NULL')
+            .bind(Date.now(), Date.now())
+            .run();
 
+        return result.meta.changes ?? 0;
+    }
+
+    async purgeTrash(maxAgeMs = 30 * 24 * 3_600_000): Promise<number> {
+        const old = await this.env.DB.prepare('SELECT id FROM drops WHERE deleted_at IS NOT NULL AND deleted_at <= ?').bind(Date.now() - maxAgeMs).all<{ id: string }>();
+
+        return this.purgeAll(old.results.map((row) => row.id));
+    }
+
+    async emptyTrash(): Promise<number> {
+        const all = await this.env.DB.prepare('SELECT id FROM drops WHERE deleted_at IS NOT NULL').all<{ id: string }>();
+
+        return this.purgeAll(all.results.map((row) => row.id));
+    }
+
+    private async purgeAll(ids: string[]): Promise<number> {
         for (let start = 0; start < ids.length; start += 50) {
-            await this.delete(ids.slice(start, start + 50));
+            await this.purge(ids.slice(start, start + 50));
         }
 
         return ids.length;
@@ -212,6 +263,7 @@ export class Drops {
             pageUrl: this.pageUrl(row.id),
             directUrl: this.directUrl(row),
             cta: row.cta_label && row.cta_url ? { label: row.cta_label, url: row.cta_url } : null,
+            deletedAt: row.deleted_at,
         }));
     }
 }

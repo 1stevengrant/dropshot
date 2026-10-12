@@ -18,7 +18,8 @@ Drop metadata (titles, tags, boards, privacy, passwords, expiry, views) lives in
 * Public: anyone with the link.
 * Password: visitors enter a password once per drop (stored as a PBKDF2 hash, unlocked with a signed cookie).
 * Private: only you, signed in through Access.
-* Self destruct: after the expiry time the drop returns 410 and is deleted within five minutes.
+* Self destruct: after the expiry time the drop returns 410 and moves to the trash within five minutes.
+* Trash: deleting a drop moves it to the trash, where its link returns 410. It can be restored for 30 days, after which the cron deletes the file and its records for good. Delete forever and Empty trash do that immediately.
 * Download permission off: no download button, and `?download=1` requests are refused for visitors.
 
 ## Development

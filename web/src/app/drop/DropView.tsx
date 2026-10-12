@@ -10,6 +10,7 @@ import { libraryLocation } from '../lib/libraryLocation';
 import { MarkupEditor } from '../markup/MarkupEditor';
 import { DropHeader } from './DropHeader';
 import { DropPreview } from './DropPreview';
+import { TrashBanner } from './TrashBanner';
 import { InfoPanel } from './InfoPanel';
 
 export function DropView({ drop }: { drop: Drop }) {
@@ -52,12 +53,22 @@ export function DropView({ drop }: { drop: Drop }) {
         onError: (error) => toast(error.message),
     });
 
+    const trashed = drop.deletedAt !== null;
+
     const remove = useMutation({
-        mutationFn: () => api.remove([drop.id]),
+        mutationFn: () => (trashed ? api.purge([drop.id]) : api.remove([drop.id])),
         onSuccess: () => {
             queryClient.invalidateQueries();
-            toast('Drop deleted');
+            toast(trashed ? 'Drop deleted forever' : 'Moved to the trash');
             navigate(libraryLocation());
+        },
+    });
+
+    const restore = useMutation({
+        mutationFn: () => api.restore([drop.id]),
+        onSuccess: () => {
+            queryClient.invalidateQueries();
+            toast('Drop restored. Its link works again.');
         },
     });
 
@@ -68,6 +79,7 @@ export function DropView({ drop }: { drop: Drop }) {
     return (
         <div className="flex h-screen flex-col">
             <DropHeader drop={drop} onMarkup={() => setMarking(true)} onDelete={confirmDelete} />
+            {trashed && <TrashBanner drop={drop} onRestore={() => restore.mutate()} onPurge={confirmDelete} />}
 
             <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
                 <main className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-6">
@@ -78,8 +90,10 @@ export function DropView({ drop }: { drop: Drop }) {
 
             {confirmingDelete && (
                 <ConfirmDialog
-                    title={`Delete “${drop.title}”?`}
-                    message="The file is removed for good and the link stops working."
+                    title={trashed ? `Delete “${drop.title}” forever?` : `Move “${drop.title}” to the trash?`}
+                    message={trashed ? 'The file is removed for good. This can’t be undone.' : 'Its link stops working now. You can restore it from Trash for 30 days.'}
+                    confirmLabel={trashed ? 'Delete forever' : 'Move to trash'}
+                    tone={trashed ? 'danger' : 'warning'}
                     onConfirm={() => remove.mutateAsync()}
                     onCancel={() => setConfirmingDelete(false)}
                 />

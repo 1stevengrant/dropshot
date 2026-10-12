@@ -45,9 +45,10 @@ export function SelectionActions({ count, boards, onAddToBoard, onDelete }: Sele
             </button>
             {confirming && (
                 <ConfirmDialog
-                    title={`Delete ${noun}?`}
-                    message="The files are removed for good and their links stop working."
-                    confirmLabel={`Delete ${noun}`}
+                    title={`Move ${noun} to the trash?`}
+                    message="Their links stop working now. You can restore them from Trash for 30 days."
+                    confirmLabel="Move to trash"
+                    tone="warning"
                     onConfirm={async () => {
                         await onDelete();
                         setConfirming(false);

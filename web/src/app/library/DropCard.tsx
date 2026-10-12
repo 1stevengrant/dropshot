@@ -4,6 +4,7 @@ import type { Drop } from '../../shared/types';
 import { Thumbnail } from '../components/Thumbnail';
 import { useToast } from '../components/Toast/useToast';
 import { copy, formatDate } from '../lib/format';
+import { trashCountdown } from '../lib/trash';
 import { StatusBadges } from './StatusBadges';
 
 export function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: boolean; onToggle: () => void }) {
@@ -42,7 +43,7 @@ export function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: b
                     {drop.pageUrl.replace(/^https?:\/\//, '')}
                 </a>
                 <div className="mt-auto flex items-center gap-2 pt-3 text-xs text-muted">
-                    <span className="flex-1">{formatDate(drop.createdAt)}</span>
+                    <span className={`flex-1 ${drop.deletedAt ? 'text-warning-content' : ''}`}>{drop.deletedAt ? trashCountdown(drop.deletedAt) : formatDate(drop.createdAt)}</span>
                     <StatusBadges drop={drop} />
                     <button
                         type="button"

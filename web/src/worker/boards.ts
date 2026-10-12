@@ -7,7 +7,7 @@ export class Boards {
 
     async list(): Promise<Board[]> {
         const rows = await this.env.DB.prepare(
-            'SELECT b.id, b.name, COUNT(bd.drop_id) AS count FROM boards b LEFT JOIN board_drops bd ON bd.board_id = b.id GROUP BY b.id ORDER BY b.name COLLATE NOCASE',
+            'SELECT b.id, b.name, COUNT(d.id) AS count FROM boards b LEFT JOIN board_drops bd ON bd.board_id = b.id LEFT JOIN drops d ON d.id = bd.drop_id AND d.deleted_at IS NULL GROUP BY b.id ORDER BY b.name COLLATE NOCASE',
         ).all<Board>();
 
         return rows.results;

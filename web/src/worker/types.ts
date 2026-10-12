@@ -28,6 +28,7 @@ export interface DropRow {
     target_url: string | null;
     cta_label: string | null;
     cta_url: string | null;
+    deleted_at: number | null;
 }
 
 export interface Visit {

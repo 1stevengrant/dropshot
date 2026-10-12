@@ -16,6 +16,7 @@ dropsApi.get('/api/drops', async (c) => {
         tag: c.req.query('tag') || undefined,
         board: c.req.query('board') ? Number(c.req.query('board')) : undefined,
         sort: (c.req.query('sort') as DropQuery['sort']) || undefined,
+        trash: ['1', 'true'].includes(c.req.query('trash') ?? '') || undefined,
         dir: (c.req.query('dir') as DropQuery['dir']) || undefined,
         page: c.req.query('page') ? Number(c.req.query('page')) : undefined,
     };
@@ -42,15 +43,16 @@ dropsApi.patch('/api/drops/:id', async (c) => {
     return c.json(await drops.get(c.req.param('id')));
 });
 
+/** Deleting moves drops to the trash; they are purged after 30 days or with Delete forever. */
 dropsApi.delete('/api/drops/:id', async (c) => {
-    await c.get('drops').delete([c.req.param('id')]);
+    await c.get('drops').trash([c.req.param('id')]);
 
     return c.body(null, 204);
 });
 
 dropsApi.post('/api/drops/delete', async (c) => {
     const { ids } = await c.req.json<{ ids: string[] }>();
-    await c.get('drops').delete(ids);
+    await c.get('drops').trash(ids);
 
     return c.body(null, 204);
 });

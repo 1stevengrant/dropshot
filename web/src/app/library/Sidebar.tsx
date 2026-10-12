@@ -1,4 +1,5 @@
-import { Files, LayoutGrid, Plus, Tag, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Files, LayoutGrid, Plus, Tag, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import type { DropQuery } from '../../shared/types';
@@ -16,10 +17,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ query, filter, boards, tags, onBoardsChanged }: SidebarProps) {
+    const trash = useQuery({ queryKey: ['trash'], queryFn: api.trashCount });
     const [creating, setCreating] = useState(false);
     const [name, setName] = useState('');
     const [deletingBoard, setDeletingBoard] = useState<{ id: number; name: string } | null>(null);
-    const isAll = !query.kind && !query.tag && !query.board;
+    const isAll = !query.kind && !query.tag && !query.board && !query.trash;
 
     async function createBoard() {
         if (!name.trim()) {
@@ -56,6 +58,9 @@ export function Sidebar({ query, filter, boards, tags, onBoardsChanged }: Sideba
                         {kind.label}
                     </SidebarItem>
                 ))}
+                <SidebarItem active={!!query.trash} onClick={() => filter({ trash: '1' })} icon={<Trash2 size={16} />} count={trash.data?.count || undefined}>
+                    Trash
+                </SidebarItem>
             </nav>
 
             <section>

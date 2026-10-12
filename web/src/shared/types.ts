@@ -20,6 +20,7 @@ export interface Drop {
     pageUrl: string;
     directUrl: string;
     cta: Cta | null;
+    deletedAt: number | null;
 }
 
 export interface Cta {
@@ -61,6 +62,7 @@ export interface DropQuery {
     sort?: 'created' | 'size' | 'views' | 'title';
     dir?: 'asc' | 'desc';
     page?: number;
+    trash?: boolean;
 }
 
 export interface DropPage {
