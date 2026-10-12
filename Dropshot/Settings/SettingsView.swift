@@ -193,7 +193,7 @@ private struct CaptureSettings: View {
 
             Section {
                 Picker("Camera", selection: $preferences.camera) {
-                    Text("Default camera").tag(CameraChoice.systemDefault)
+                    Text("Automatic (\(CameraChoice.automatic?.localizedName ?? "none"))").tag(CameraChoice.systemDefault)
 
                     Divider()
 

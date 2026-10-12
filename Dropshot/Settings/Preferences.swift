@@ -34,9 +34,25 @@ enum CameraChoice {
             .map { ($0.uniqueID, $0.localizedName) }
     }
 
-    /// The chosen camera, falling back to the system default when it has been unplugged.
+    /// The chosen camera, falling back to `automatic` when none is chosen or it has been unplugged.
     static func device(for choice: String) -> AVCaptureDevice? {
-        AVCaptureDevice(uniqueID: choice) ?? AVCaptureDevice.default(for: .video)
+        AVCaptureDevice(uniqueID: choice) ?? automatic
+    }
+
+    /// The camera macOS prefers, otherwise one that can deliver video now: the built-in camera unless the lid is closed
+    /// (it reports itself suspended), then other local cameras, then Continuity Camera iPhones.
+    /// `AVCaptureDevice.default(for:)` returns a nearby iPhone even when it sends only black frames.
+    static var automatic: AVCaptureDevice? {
+        if let preferred = AVCaptureDevice.systemPreferredCamera {
+            return preferred
+        }
+
+        let cameras = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified)
+            .devices
+            .filter { !$0.isSuspended }
+        let local = cameras.filter { !$0.isContinuityCamera }
+
+        return local.first { $0.deviceType == .builtInWideAngleCamera } ?? local.first ?? cameras.first
     }
 }
 
