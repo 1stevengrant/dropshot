@@ -67,7 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// dropshot://capture-url (asks for a URL) or dropshot://capture-url?url=https://example.com
     private func handle(_ url: URL) {
         if url.isFileURL {
-            UploadCoordinator.shared.upload(files: [url])
+            requestExternalUpload(url)
 
             return
         }
@@ -99,12 +99,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "upload":
             let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "path" }?.value
 
-            if let path {
-                UploadCoordinator.shared.upload(files: [URL(filePath: path)])
+            if let path, path.hasPrefix("/") {
+                requestExternalUpload(URL(filePath: path))
             }
         default:
             break
         }
+    }
+
+    private func requestExternalUpload(_ url: URL) {
+        let file = url.standardizedFileURL.resolvingSymlinksInPath()
+        let alert = NSAlert()
+        alert.messageText = "Upload this file?"
+        alert.informativeText = "An external request wants to share the following file or folder using your storage account. Folders include all their contents.\n\n\(file.path)"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Upload")
+        NSApp.activate()
+
+        guard alert.runModal() == .alertSecondButtonReturn else {
+            return
+        }
+
+        UploadCoordinator.shared.upload(files: [file])
     }
 }
 
