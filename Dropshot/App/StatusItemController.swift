@@ -310,10 +310,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
             return
         }
 
-        let url = drop.url.absoluteString
-        let html = drop.kind == .image ? "<img src=\"\((drop.directURL ?? drop.url).absoluteString)\" alt=\"\(drop.filename)\">" : "<a href=\"\(url)\">\(drop.filename)</a>"
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(html, forType: .string)
+        NSPasteboard.general.setString(drop.clipboardHTML, forType: .string)
     }
 
     @objc private func openInBrowser(_ sender: NSMenuItem) {
