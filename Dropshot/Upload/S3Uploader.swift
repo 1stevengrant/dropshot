@@ -63,7 +63,8 @@ nonisolated enum UploadError: LocalizedError {
 
 nonisolated struct UploadResult: Sendable {
     let objectKey: String
-    let publicURL: URL
+    /// The raw file. With the Dropshot Worker in front of the bucket, the shareable link is the drop page instead.
+    let directURL: URL
 }
 
 /// Uploads one file with a single signed PUT and reports byte progress.
@@ -100,7 +101,7 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
             throw UploadError.server(status: status, body: String(decoding: data, as: UTF8.self))
         }
 
-        return UploadResult(objectKey: objectKey, publicURL: publicURL(objectKey: objectKey, encodedKey: encodedKey))
+        return UploadResult(objectKey: objectKey, directURL: publicURL(objectKey: objectKey, encodedKey: encodedKey))
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {

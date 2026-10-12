@@ -110,11 +110,11 @@ private struct StorageSettings: View {
                 try "Dropshot test upload \(Date.now)".write(to: file, atomically: true, encoding: .utf8)
                 let result = try await S3Uploader(configuration: configuration) { _ in }
                     .upload(fileAt: file, filename: "dropshot-test.txt", shortId: "_test")
-                let (_, response) = try await URLSession.shared.data(from: result.publicURL)
+                let (_, response) = try await URLSession.shared.data(from: result.directURL)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 0
 
                 testResult = status == 200
-                    ? "Uploaded and publicly readable: \(result.publicURL.absoluteString)"
+                    ? "Uploaded and publicly readable: \(result.directURL.absoluteString)"
                     : "Uploaded, but the public URL returned HTTP \(status). Check the public base URL."
             } catch {
                 testResult = error.localizedDescription

@@ -191,6 +191,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
 
         let entries: [(String, Selector, Bool)] = [
             ("Copy Link", #selector(copyLink(_:)), true),
+            ("Copy Direct Link", #selector(copyDirectLink(_:)), drop.directURL != nil),
             ("Copy as Markdown", #selector(copyMarkdown(_:)), true),
             ("Copy as HTML", #selector(copyHTML(_:)), true),
             ("Open in Browser", #selector(openInBrowser(_:)), true),
@@ -278,12 +279,21 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         NSPasteboard.general.setString(drop.url.absoluteString, forType: .string)
     }
 
+    @objc private func copyDirectLink(_ sender: NSMenuItem) {
+        guard let directURL = drop(for: sender)?.directURL else {
+            return
+        }
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(directURL.absoluteString, forType: .string)
+    }
+
     @objc private func copyMarkdown(_ sender: NSMenuItem) {
         guard let drop = drop(for: sender) else {
             return
         }
 
-        let link = drop.kind == .image ? "![\(drop.filename)](\(drop.url.absoluteString))" : "[\(drop.filename)](\(drop.url.absoluteString))"
+        let link = drop.kind == .image ? "![\(drop.filename)](\((drop.directURL ?? drop.url).absoluteString))" : "[\(drop.filename)](\(drop.url.absoluteString))"
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(link, forType: .string)
     }
@@ -294,7 +304,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         }
 
         let url = drop.url.absoluteString
-        let html = drop.kind == .image ? "<img src=\"\(url)\" alt=\"\(drop.filename)\">" : "<a href=\"\(url)\">\(drop.filename)</a>"
+        let html = drop.kind == .image ? "<img src=\"\((drop.directURL ?? drop.url).absoluteString)\" alt=\"\(drop.filename)\">" : "<a href=\"\(url)\">\(drop.filename)</a>"
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(html, forType: .string)
     }
