@@ -15,10 +15,12 @@ dropPage.get('/:id', async (c) => {
     }
 
     const owner = await isOwnerAnywhere(c.req.raw, c.env);
+    const redirects = row.kind === 'link' && Boolean(row.target_url) && row.deleted_at === null;
 
     // Like Droplr, the owner gets the management view at the share link itself (the address stays the same);
-    // ?preview shows what visitors see.
-    if (owner && c.req.query('preview') === undefined) {
+    // ?preview shows what visitors see. Short links redirect the owner too: the library opens their management
+    // view in the client, and ?manage forces it on a full page load.
+    if (owner && c.req.query('preview') === undefined && (!redirects || c.req.query('manage') !== undefined)) {
         return appShell(c);
     }
 
