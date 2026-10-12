@@ -1,5 +1,6 @@
 import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { Modal } from './Modal';
 
 interface ConfirmDialogProps {
     title: string;
@@ -24,7 +25,7 @@ export function ConfirmDialog({ title, message, confirmLabel = 'Delete', onConfi
     }
 
     return (
-        <dialog open className="modal modal-open" role="alertdialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message" onCancel={onCancel}>
+        <Modal role="alertdialog" labelledBy="confirm-dialog-title" describedBy="confirm-dialog-message" onClose={onCancel} closeDisabled={working}>
             <div className="modal-box">
                 <div className="flex gap-4">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
@@ -43,7 +44,6 @@ export function ConfirmDialog({ title, message, confirmLabel = 'Delete', onConfi
                     </button>
                 </div>
             </div>
-            <button type="button" className="modal-backdrop" onClick={onCancel} aria-label="Cancel" disabled={working} />
-        </dialog>
+        </Modal>
     );
 }

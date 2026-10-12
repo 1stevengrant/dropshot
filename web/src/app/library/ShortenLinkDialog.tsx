@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast/useToast';
 import { api } from '../lib/api';
 import { copy } from '../lib/format';
@@ -31,7 +32,7 @@ export function ShortenLinkDialog({ onClose }: ShortenLinkDialogProps) {
     }
 
     return (
-        <dialog open className="modal modal-open" aria-labelledby="shorten-link-title" onCancel={onClose}>
+        <Modal labelledBy="shorten-link-title" onClose={onClose}>
             <form onSubmit={submit} className="modal-box flex flex-col gap-4">
                 <h2 id="shorten-link-title" className="text-lg font-semibold">Shorten a link</h2>
 
@@ -63,7 +64,6 @@ export function ShortenLinkDialog({ onClose }: ShortenLinkDialogProps) {
                     </button>
                 </div>
             </form>
-            <button type="button" className="modal-backdrop" onClick={onClose} aria-label="Close" />
-        </dialog>
+        </Modal>
     );
 }
