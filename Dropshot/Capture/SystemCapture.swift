@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Observation
+import UniformTypeIdentifiers
 
 nonisolated enum CaptureError: LocalizedError {
     case permissionDenied
@@ -84,8 +85,12 @@ final class ScreenRecorder {
             process = nil
         }
 
-        _ = try await ScreencaptureProcess.run(arguments: arguments) { [weak self] process in
+        let status = try await ScreencaptureProcess.run(arguments: arguments) { [weak self] process in
             self?.process = process
+        }
+
+        guard status == 0 else {
+            return nil
         }
 
         if FileManager.default.fileExists(atPath: url.path) {
@@ -94,39 +99,23 @@ final class ScreenRecorder {
 
         isRecording = false
 
-        // With the toolbar, macOS saves to the user's screenshot location once its floating thumbnail goes away.
-        for _ in 0..<40 {
-            if let recording = try Self.adoptRecording(savedSince: startedAt, movingTo: url) {
-                return recording
-            }
+        // macOS may save toolbar recordings elsewhere. Never infer ownership from a timestamp.
+        let panel = NSOpenPanel()
+        panel.title = "Choose the recording to upload"
+        panel.message = "macOS did not save a recording to the requested location. Select the recording you want to share, or cancel to upload nothing. The original file will stay in place."
+        panel.allowedContentTypes = [.quickTimeMovie]
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Upload Recording"
+        NSApp.activate()
 
-            try await Task.sleep(for: .milliseconds(500))
-        }
-
-        return nil
-    }
-
-    private static func adoptRecording(savedSince start: Date, movingTo destination: URL) throws -> URL? {
-        let screencaptureDefaults = UserDefaults(suiteName: "com.apple.screencapture")
-        let location = (screencaptureDefaults?.string(forKey: "location-screenrecording") ?? screencaptureDefaults?.string(forKey: "location"))
-            .map { URL(filePath: ($0 as NSString).expandingTildeInPath) } ?? URL.desktopDirectory
-
-        let candidates = (try? FileManager.default.contentsOfDirectory(at: location, includingPropertiesForKeys: [.creationDateKey])) ?? []
-
-        let recording = candidates
-            .filter { $0.pathExtension == "mov" && !$0.lastPathComponent.hasPrefix(".") }
-            .compactMap { url in (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate).map { (url, $0) } }
-            .filter { $0.1 >= start }
-            .max { $0.1 < $1.1 }?
-            .0
-
-        guard let recording else {
+        guard panel.runModal() == .OK, let recording = panel.url else {
             return nil
         }
 
-        try FileManager.default.moveItem(at: recording, to: destination)
+        try FileManager.default.copyItem(at: recording, to: url)
 
-        return destination
+        return url
     }
 
     /// Sends macOS's own "stop screen recording" shortcut (⌃⌘Esc). Interrupting screencapture instead
