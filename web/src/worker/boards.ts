@@ -7,8 +7,8 @@ export class Boards {
 
     async list(): Promise<Board[]> {
         const rows = await this.env.DB.prepare(
-            'SELECT b.id, b.name, COUNT(d.id) AS count FROM boards b LEFT JOIN board_drops bd ON bd.board_id = b.id LEFT JOIN drops d ON d.id = bd.drop_id AND d.deleted_at IS NULL GROUP BY b.id ORDER BY b.name COLLATE NOCASE',
-        ).all<Board>();
+            'SELECT b.id, b.name, COUNT(d.id) AS count FROM boards b LEFT JOIN board_drops bd ON bd.board_id = b.id LEFT JOIN drops d ON d.id = bd.drop_id AND d.deleted_at IS NULL AND (d.expires_at IS NULL OR d.expires_at > ?) GROUP BY b.id ORDER BY b.name COLLATE NOCASE',
+        ).bind(Date.now()).all<Board>();
 
         return rows.results;
     }
