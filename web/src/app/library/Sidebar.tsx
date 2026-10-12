@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import type { DropQuery } from '../../shared/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Wordmark } from '../components/Wordmark';
 import { api } from '../lib/api';
 import { kinds } from './kinds';
 import { SidebarItem } from './SidebarItem';
@@ -49,7 +50,7 @@ export function Sidebar({ query, filter, boards, tags, onBoardsChanged }: Sideba
 
     return (
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r border-line bg-panel px-4 py-5 md:flex">
-            <Link to="/" onClick={() => filter({})} className="px-2 text-2xl font-bold tracking-tight text-accent">Dropshot</Link>
+            <Link to="/" onClick={() => filter({})} className="px-2 text-2xl font-bold tracking-tight text-accent"><Wordmark size={28} /></Link>
 
             <nav className="flex flex-col gap-0.5">
                 <SidebarItem active={isAll} onClick={() => filter({})} icon={<LayoutGrid size={16} />}>My drops</SidebarItem>

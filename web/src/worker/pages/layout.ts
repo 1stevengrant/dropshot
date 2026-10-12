@@ -7,7 +7,7 @@ export function layout(options: { title: string; head?: string; header?: string;
         head: options.head,
         bodyClass: 'flex min-h-screen flex-col bg-base-200 text-base-content antialiased',
         body: `<header class="navbar gap-4 border-b border-base-300 bg-base-100 px-5">
-    <a class="btn btn-ghost px-2 text-lg font-bold tracking-tight text-primary" href="/">Dropshot</a>
+    <a class="btn btn-ghost px-2 text-lg font-bold tracking-tight text-primary" href="/"><img src="/favicon.svg" alt="" width="22" height="22">Dropshot</a>
     <div class="min-w-0 flex-1 truncate font-medium">${options.header ?? ''}</div>
     ${options.actions ?? ''}
 </header>
