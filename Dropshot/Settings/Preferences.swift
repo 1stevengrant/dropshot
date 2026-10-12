@@ -25,6 +25,45 @@ enum MicrophoneChoice {
     }
 }
 
+enum CameraChoice {
+    static let systemDefault = ""
+
+    static var devices: [(id: String, name: String)] {
+        AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified)
+            .devices
+            .map { ($0.uniqueID, $0.localizedName) }
+    }
+
+    /// The chosen camera, falling back to the system default when it has been unplugged.
+    static func device(for choice: String) -> AVCaptureDevice? {
+        AVCaptureDevice(uniqueID: choice) ?? AVCaptureDevice.default(for: .video)
+    }
+}
+
+enum CameraSize: String, CaseIterable, Identifiable {
+    case small
+    case medium
+    case large
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .small: "Small"
+        case .medium: "Medium"
+        case .large: "Large"
+        }
+    }
+
+    var diameter: CGFloat {
+        switch self {
+        case .small: 120
+        case .medium: 180
+        case .large: 260
+        }
+    }
+}
+
 enum ScreenshotAction: String, CaseIterable, Identifiable {
     case upload
     case annotate
@@ -92,6 +131,9 @@ final class Preferences {
     var showClicksInRecordings: Bool { didSet { defaults.set(showClicksInRecordings, forKey: Keys.showClicksInRecordings) } }
     /// Seconds counted down before a recording starts; 0 starts straight away.
     var recordingCountdown: Int { didSet { defaults.set(recordingCountdown, forKey: Keys.recordingCountdown) } }
+    /// An AVCaptureDevice unique ID, or empty for the system default camera.
+    var camera: String { didSet { defaults.set(camera, forKey: Keys.camera) } }
+    var cameraSize: CameraSize { didSet { defaults.set(cameraSize.rawValue, forKey: Keys.cameraSize) } }
     var autoUploadScreenshots: Bool { didSet { defaults.set(autoUploadScreenshots, forKey: Keys.autoUploadScreenshots) } }
     var playSounds: Bool { didSet { defaults.set(playSounds, forKey: Keys.playSounds) } }
     var showNotifications: Bool { didSet { defaults.set(showNotifications, forKey: Keys.showNotifications) } }
@@ -112,6 +154,8 @@ final class Preferences {
             Keys.recordSystemAudio: true,
             Keys.showClicksInRecordings: false,
             Keys.recordingCountdown: 3,
+            Keys.camera: CameraChoice.systemDefault,
+            Keys.cameraSize: CameraSize.medium.rawValue,
             Keys.autoUploadScreenshots: false,
             Keys.playSounds: true,
             Keys.showNotifications: true,
@@ -136,6 +180,8 @@ final class Preferences {
         recordSystemAudio = defaults.bool(forKey: Keys.recordSystemAudio)
         showClicksInRecordings = defaults.bool(forKey: Keys.showClicksInRecordings)
         recordingCountdown = defaults.integer(forKey: Keys.recordingCountdown)
+        camera = defaults.string(forKey: Keys.camera) ?? CameraChoice.systemDefault
+        cameraSize = CameraSize(rawValue: defaults.string(forKey: Keys.cameraSize) ?? "") ?? .medium
         autoUploadScreenshots = defaults.bool(forKey: Keys.autoUploadScreenshots)
         playSounds = defaults.bool(forKey: Keys.playSounds)
         showNotifications = defaults.bool(forKey: Keys.showNotifications)
@@ -180,6 +226,8 @@ final class Preferences {
         static let recordSystemAudio = "capture.recordSystemAudio"
         static let showClicksInRecordings = "capture.showClicks"
         static let recordingCountdown = "capture.recordingCountdown"
+        static let camera = "capture.camera"
+        static let cameraSize = "capture.cameraSize"
         static let autoUploadScreenshots = "capture.autoUploadScreenshots"
         static let playSounds = "general.playSounds"
         static let showNotifications = "general.showNotifications"

@@ -131,6 +131,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         menu.addItem(item("Screenshot and Annotate", symbol: "pencil.and.outline", action: #selector(screenshotAndAnnotate), hotkey: .captureAndAnnotate))
         menu.addItem(item("Record Video", symbol: "record.circle", action: #selector(recordVideo), hotkey: .recordVideo))
         menu.addItem(item("Record GIF", symbol: "photo.stack", action: #selector(recordGIF), hotkey: .recordGIF))
+        menu.addItem(item("Record with Camera", symbol: "person.crop.circle", action: #selector(recordWithCamera), hotkey: .recordWithCamera))
         menu.addItem(item("Capture Web Page…", symbol: "globe", action: #selector(captureWebPage), hotkey: .captureWebPage))
         menu.addItem(.separator())
         menu.addItem(item("Upload File…", symbol: "arrow.up.doc", action: #selector(uploadFile), hotkey: .uploadFile))
@@ -284,6 +285,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
     @objc private func screenshotAndAnnotate() { actions.screenshot(annotate: true) }
     @objc private func recordVideo() { actions.startRecording(as: .video) }
     @objc private func recordGIF() { actions.startRecording(as: .gif) }
+    @objc private func recordWithCamera() { actions.startRecording(as: .video, camera: true) }
     @objc private func finishRecording() { actions.stopRecording() }
     @objc private func togglePause() { actions.togglePause() }
     @objc private func toggleMute() { actions.toggleMute() }

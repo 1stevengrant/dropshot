@@ -27,6 +27,7 @@ On first launch the Settings window opens. Under Storage, enter the endpoint, bu
 | Screenshot and annotate | ⌥⇧3 |
 | Record video (MOV) | ⌥⇧5 |
 | Record GIF | ⌥⇧2 |
+| Record with camera | none (set one in Settings) |
 | Upload file | ⌥⇧6 |
 | New note | ⌥⇧N |
 | Finish recording | ⇧⌘D |
@@ -36,6 +37,8 @@ On first launch the Settings window opens. Under Storage, enter the endpoint, bu
 
 Screenshots use the system screencapture tool, so selection is the native macOS one. Recordings use ScreenCaptureKit: drag to record an area, click or press Space to record a window, press Return for the whole screen, or Esc to cancel. A countdown (3 seconds by default, set under Settings › Capture) runs before recording starts. While recording, a control bar next to the area has stop, pause, mute and delete buttons. It never appears in the video. The Dropshot menu offers the same controls. System audio and the microphone are recorded separately, then mixed into one audio track when the recording finishes, because browsers only play a movie's first audio track. Paused time is cut from the movie. GIFs record without sound.
 
+Record with Camera (in the menu, or `dropshot://record?camera=1`) adds a round, mirrored camera bubble in the bottom left corner of the recorded area. The bubble is part of the video and can be dragged while you record. Choose the camera and the bubble size (small, medium or large) under Settings › Capture.
+
 With Automatically upload macOS screenshots turned on (Settings › Capture), screenshots and recordings you take with ⌘⇧3, ⌘⇧4 or ⌘⇧5 upload as soon as macOS saves them. The originals are left where they are.
 
 You can also drop files or text on the menu bar icon, or use Upload with Dropshot in the Finder Services menu. Folders and multiple files are zipped. The link is copied to the clipboard as soon as an upload starts. Anyone who opens it before the upload finishes sees a Still uploading page that refreshes until the drop is ready. Turn off instant links under General to copy the link only once the upload is done. The menu lists recent drops, each with copy link, Markdown and HTML formats, and a Manage item that opens the drop's management page.
@@ -44,8 +47,8 @@ Under General › Drops you choose the privacy (public, password or private), se
 
 The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, pixelate, step number and emoji stamp tools, with undo and redo. You can upload, copy or save the result.
 
-Automation URLs: `dropshot://screenshot`, `annotate`, `record`, `gif`, `stop`, `pause`, `mute`, `clipboard`, `note`, and `upload?path=/absolute/file`.
+Automation URLs: `dropshot://screenshot`, `annotate`, `record` (add `?camera=1` for the camera bubble), `gif`, `stop`, `pause`, `mute`, `clipboard`, `note`, and `upload?path=/absolute/file`.
 
 ## Not yet built
 
-Droplr features left out of this version: camera bubble and per app plugins.
+Droplr features left out of this version: per app plugins.

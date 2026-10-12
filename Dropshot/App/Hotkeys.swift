@@ -8,6 +8,8 @@ extension KeyboardShortcuts.Name {
     static let captureAndAnnotate = Self("captureAndAnnotate", default: .init(.three, modifiers: [.option, .shift]))
     static let recordVideo = Self("recordVideo", default: .init(.five, modifiers: [.option, .shift]))
     static let recordGIF = Self("recordGIF", default: .init(.two, modifiers: [.option, .shift]))
+    /// Droplr had no separate camera recording shortcut, so no default.
+    static let recordWithCamera = Self("recordWithCamera")
     static let uploadFile = Self("uploadFile", default: .init(.six, modifiers: [.option, .shift]))
     static let newNote = Self("newNote", default: .init(.n, modifiers: [.option, .shift]))
     /// Droplr had no default for code snippets.
@@ -28,6 +30,7 @@ enum Hotkeys {
         KeyboardShortcuts.onKeyUp(for: .captureAndAnnotate) { actions.screenshot(annotate: true) }
         KeyboardShortcuts.onKeyUp(for: .recordVideo) { actions.toggleRecording(as: .video) }
         KeyboardShortcuts.onKeyUp(for: .recordGIF) { actions.toggleRecording(as: .gif) }
+        KeyboardShortcuts.onKeyUp(for: .recordWithCamera) { actions.toggleRecording(as: .video, camera: true) }
         KeyboardShortcuts.onKeyUp(for: .captureWebPage) { actions.captureWebPage() }
         KeyboardShortcuts.onKeyUp(for: .uploadFile) { actions.chooseFiles() }
         KeyboardShortcuts.onKeyUp(for: .newNote) { actions.newNote() }

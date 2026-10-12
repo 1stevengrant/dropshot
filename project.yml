@@ -32,6 +32,7 @@ targets:
         LSApplicationCategoryType: public.app-category.productivity
         NSMicrophoneUsageDescription: Dropshot records your microphone in screen recordings when you enable it.
         NSScreenCaptureUsageDescription: Dropshot captures your screen for screenshots and recordings.
+        NSCameraUsageDescription: Dropshot shows your camera in a bubble when you record with the camera.
         CFBundleURLTypes:
           - CFBundleURLName: Dropshot actions
             CFBundleURLSchemes: [dropshot]
@@ -50,6 +51,7 @@ targets:
       path: Dropshot/Resources/Dropshot.entitlements
       properties:
         com.apple.security.device.audio-input: true
+        com.apple.security.device.camera: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: nz.ghijk.dropshot

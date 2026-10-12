@@ -35,17 +35,17 @@ final class CaptureActions {
         }
     }
 
-    func toggleRecording(as format: RecordingFormat) {
+    func toggleRecording(as format: RecordingFormat, camera: Bool = false) {
         if recorder.isRecording {
             stopRecording()
 
             return
         }
 
-        startRecording(as: format)
+        startRecording(as: format, camera: camera)
     }
 
-    func startRecording(as format: RecordingFormat) {
+    func startRecording(as format: RecordingFormat, camera: Bool = false) {
         if isCapturing || recorder.isRecording {
             return
         }
@@ -57,7 +57,8 @@ final class CaptureActions {
                     microphone: format == .gif ? MicrophoneChoice.none : preferences.microphone,
                     systemAudio: format == .video && preferences.recordSystemAudio,
                     showClicks: preferences.showClicksInRecordings,
-                    countdown: preferences.recordingCountdown
+                    countdown: preferences.recordingCountdown,
+                    camera: camera ? (preferences.camera, preferences.cameraSize) : nil
                 ) else {
                     return
                 }
