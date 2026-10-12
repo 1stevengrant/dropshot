@@ -6,6 +6,8 @@ export function rememberLibraryLocation(search: string, query: string): void {
 
     if (query) {
         params.set('q', query);
+    } else {
+        params.delete('q');
     }
 
     const suffix = params.toString();
