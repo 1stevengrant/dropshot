@@ -43,7 +43,7 @@ final class CameraBubble {
         panel.level = .floating
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        panel.hasShadow = false
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
@@ -70,20 +70,24 @@ private final class BubbleView: NSView {
     init(session: AVCaptureSession) {
         super.init(frame: .zero)
 
-        wantsLayer = true
-
+        // The preview renders outside its superlayer's mask, so it is rounded itself.
         let preview = AVCaptureVideoPreviewLayer(session: session)
         preview.videoGravity = .resizeAspectFill
+        preview.masksToBounds = true
         preview.connection?.automaticallyAdjustsVideoMirroring = false
         preview.connection?.isVideoMirrored = true
 
+        let ring = CALayer()
+        ring.borderColor = NSColor.white.withAlphaComponent(0.9).cgColor
+        ring.borderWidth = 3
+
         let root = CALayer()
-        root.masksToBounds = true
-        root.borderColor = NSColor.white.withAlphaComponent(0.9).cgColor
-        root.borderWidth = 3
-        root.backgroundColor = NSColor.black.cgColor
         root.addSublayer(preview)
+        root.addSublayer(ring)
+
+        // Layer hosting: assign the layer before turning layers on, so AppKit uses it as is.
         layer = root
+        wantsLayer = true
     }
 
     required init?(coder: NSCoder) {
@@ -95,7 +99,9 @@ private final class BubbleView: NSView {
     override func layout() {
         super.layout()
 
-        layer?.cornerRadius = bounds.width / 2
-        layer?.sublayers?.first?.frame = bounds
+        for sublayer in layer?.sublayers ?? [] {
+            sublayer.frame = bounds
+            sublayer.cornerRadius = bounds.width / 2
+        }
     }
 }

@@ -12,20 +12,22 @@ struct RecordingTarget {
     let display: SCDisplay
     /// The picked window, when recording one window rather than an area of the display.
     let window: SCWindow?
-    let ownApplication: SCRunningApplication?
 
-    /// The same target with some of Dropshot's own windows (the camera bubble) let into the recording. A single
-    /// window filter can't take extra windows, so a window target becomes that window plus the extras, cropped to it.
+    /// The same target with extra windows (the camera bubble) added to the recording. A single window filter can't
+    /// take extra windows, so a window target becomes that window plus the extras, cropped to it.
     func including(_ extras: [SCWindow]) -> RecordingTarget {
         guard let window else {
-            let filter = SCContentFilter(display: display, excludingApplications: ownApplication.map { [$0] } ?? [], exceptingWindows: extras)
+            // "Excepting" only lets a window back in when its application is excluded; on its own it would leave the
+            // window out. So exclude the extras' application (Dropshot) and except the extras.
+            let applications = Dictionary(extras.compactMap(\.owningApplication).map { ($0.processID, $0) }, uniquingKeysWith: { first, _ in first })
+            let filter = SCContentFilter(display: display, excludingApplications: Array(applications.values), exceptingWindows: extras)
 
-            return RecordingTarget(filter: filter, sourceRect: sourceRect, frame: frame, display: display, window: nil, ownApplication: ownApplication)
+            return RecordingTarget(filter: filter, sourceRect: sourceRect, frame: frame, display: display, window: nil)
         }
 
         let local = window.frame.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY).intersection(CGRect(origin: .zero, size: display.frame.size))
 
-        return RecordingTarget(filter: SCContentFilter(display: display, including: [window] + extras), sourceRect: local.integral, frame: frame, display: display, window: window, ownApplication: ownApplication)
+        return RecordingTarget(filter: SCContentFilter(display: display, including: [window] + extras), sourceRect: local.integral, frame: frame, display: display, window: window)
     }
 }
 
@@ -43,13 +45,11 @@ enum RecordingRegionPicker {
 
 private final class PickerSession {
     private let content: SCShareableContent
-    private let ownApplication: SCRunningApplication?
     private var windows: [PickerWindow] = []
     private var continuation: CheckedContinuation<RecordingTarget?, Never>?
 
     init(content: SCShareableContent) {
         self.content = content
-        ownApplication = content.applications.first { $0.processID == ProcessInfo.processInfo.processIdentifier }
     }
 
     func run() async -> RecordingTarget? {
@@ -92,14 +92,14 @@ private final class PickerSession {
 
     // MARK: - Targets
 
-    /// Dropshot's own windows (the control bar, the countdown) are left out by application, so windows created after
-    /// this filter still don't show up in the recording. The camera bubble is let back in with `RecordingTarget.including`.
+    /// Dropshot has no windows on screen when this content is loaded, so ScreenCaptureKit doesn't list it and it can't
+    /// be excluded by application here. Its control bar and countdown stay out of recordings with `sharingType = .none`.
     func displayFilter(for screen: NSScreen) -> SCContentFilter? {
         guard let display = display(for: screen) else {
             return nil
         }
 
-        return SCContentFilter(display: display, excludingApplications: ownApplication.map { [$0] } ?? [], exceptingWindows: [])
+        return SCContentFilter(display: display, excludingWindows: [])
     }
 
     func regionTarget(_ rect: NSRect, on screen: NSScreen) -> RecordingTarget? {
@@ -109,7 +109,7 @@ private final class PickerSession {
 
         let local = CGRect(x: rect.minX - screen.frame.minX, y: screen.frame.maxY - rect.maxY, width: rect.width, height: rect.height)
 
-        return RecordingTarget(filter: filter, sourceRect: local.integral, frame: rect, display: display, window: nil, ownApplication: ownApplication)
+        return RecordingTarget(filter: filter, sourceRect: local.integral, frame: rect, display: display, window: nil)
     }
 
     func displayTarget(on screen: NSScreen) -> RecordingTarget? {
@@ -117,7 +117,7 @@ private final class PickerSession {
             return nil
         }
 
-        return RecordingTarget(filter: filter, sourceRect: nil, frame: screen.frame, display: display, window: nil, ownApplication: ownApplication)
+        return RecordingTarget(filter: filter, sourceRect: nil, frame: screen.frame, display: display, window: nil)
     }
 
     func windowTarget(_ window: SCWindow) -> RecordingTarget? {
@@ -127,14 +127,14 @@ private final class PickerSession {
             return nil
         }
 
-        return RecordingTarget(filter: SCContentFilter(desktopIndependentWindow: window), sourceRect: nil, frame: Self.appKitRect(window.frame), display: display, window: window, ownApplication: ownApplication)
+        return RecordingTarget(filter: SCContentFilter(desktopIndependentWindow: window), sourceRect: nil, frame: Self.appKitRect(window.frame), display: display, window: window)
     }
 
     /// The frontmost normal window under a point in AppKit screen coordinates.
     func window(at point: NSPoint) -> SCWindow? {
         let candidates = Dictionary(
             content.windows
-                .filter { $0.isOnScreen && $0.windowLayer == 0 && $0.owningApplication?.processID != ownApplication?.processID && $0.frame.width > 1 }
+                .filter { $0.isOnScreen && $0.windowLayer == 0 && $0.owningApplication?.processID != ProcessInfo.processInfo.processIdentifier && $0.frame.width > 1 }
                 .map { ($0.windowID, $0) },
             uniquingKeysWith: { first, _ in first }
         )
