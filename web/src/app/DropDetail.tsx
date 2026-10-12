@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ChevronLeft, Clock, Code, Copy, Download, Ellipsis, ExternalLink, Eye, FolderPlus, Globe, Image as ImageIcon, KeyRound, Link2, Lock, Pencil, Tag, Trash2, X,
+    ChevronLeft, Clock, Code, Copy, Download, Ellipsis, ExternalLink, Eye, FolderPlus, Globe, KeyRound, Link2, Lock, Pencil, Tag, Trash2, X,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -267,16 +267,23 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                     </CircleButton>
 
                     <Menu
-                        label="Embed"
+                        label="Embed and share"
                         trigger={({ toggle }) => (
-                            <CircleButton title="Copy embed code" onClick={toggle}>
-                                {drop.kind === 'image' ? <ImageIcon size={18} /> : <Code size={18} />}
+                            <CircleButton title="Embed" onClick={toggle}>
+                                <Code size={18} />
                             </CircleButton>
                         )}
                     >
                         {(close) => (
                             <>
-                                <MenuHeading>Copy as</MenuHeading>
+                                <MenuHeading>Embed and share</MenuHeading>
+                                <MenuItem onSelect={async () => { await copy(await iframeCode(drop)); toast('Embed code copied'); close(); }}>
+                                    <span className="flex flex-col">
+                                        <span className="font-medium">Embed (iframe)</span>
+                                        <span className="text-xs text-muted">Paste into a website, Notion or a blog</span>
+                                    </span>
+                                </MenuItem>
+                                <div className="my-1 border-t border-line" />
                                 {embedFormats(drop).map((format) => (
                                     <MenuItem key={format.label} onSelect={async () => { await copy(format.value); toast(`${format.label} copied`); close(); }}>
                                         {format.label}
@@ -526,6 +533,43 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
             )}
         </aside>
     );
+}
+
+/** Responsive iframe code; images and videos keep their real aspect ratio. */
+async function iframeCode(drop: Drop): Promise<string> {
+    const ratio = await aspectRatio(drop);
+    const src = `${drop.pageUrl}/embed`;
+    const title = drop.title.replace(/"/g, '&quot;');
+
+    if (drop.kind === 'audio') {
+        return `<iframe src="${src}" title="${title}" style="width:100%;height:64px;border:0" loading="lazy"></iframe>`;
+    }
+
+    return `<div style="position:relative;width:100%;padding-top:${(ratio * 100).toFixed(2)}%"><iframe src="${src}" title="${title}" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+}
+
+function aspectRatio(drop: Drop): Promise<number> {
+    const fallback = { pdf: 1.3, text: 0.75, link: 0.25, file: 0.4 }[drop.kind as string] ?? 9 / 16;
+
+    if (drop.kind !== 'image' && drop.kind !== 'video') {
+        return Promise.resolve(fallback);
+    }
+
+    return new Promise((resolve) => {
+        const element = drop.kind === 'image' ? new Image() : document.createElement('video');
+        const done = (width: number, height: number) => resolve(width && height ? height / width : fallback);
+
+        if (element instanceof HTMLImageElement) {
+            element.onload = () => done(element.naturalWidth, element.naturalHeight);
+        } else {
+            element.preload = 'metadata';
+            element.onloadedmetadata = () => done(element.videoWidth, element.videoHeight);
+        }
+
+        element.onerror = () => resolve(fallback);
+        element.src = previewUrl(drop);
+        setTimeout(() => resolve(fallback), 4000);
+    });
 }
 
 function embedFormats(drop: Drop): { label: string; value: string }[] {

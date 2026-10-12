@@ -124,6 +124,40 @@ function openGraph(row: DropRow, directUrl: string, pageUrl: string): string {
     return tags.join('\n');
 }
 
+/** A chrome-free page for iframes: just the media, filling the frame. */
+export function embedPage(row: DropRow, origin: string, text: string | null): string {
+    const directPath = `/${row.id}/${encodeURIComponent(row.filename)}`;
+    const pageUrl = `${origin}/${row.id}`;
+    const fill = 'width:100%;height:100%;object-fit:contain;display:block;';
+    const noDownload = row.allow_download ? '' : ' controlsList="nodownload" oncontextmenu="return false"';
+
+    const body = {
+        image: `<a href="${escape(pageUrl)}" target="_blank" rel="noopener"><img src="${escape(directPath)}" alt="${escape(row.title)}" style="${fill}"></a>`,
+        video: `<video src="${escape(directPath)}" controls playsinline preload="metadata" style="${fill}background:#000"${noDownload}></video>`,
+        audio: `<div style="display:flex;height:100%;align-items:center;padding:0 12px"><audio src="${escape(directPath)}" controls preload="metadata" style="width:100%"${noDownload}></audio></div>`,
+        pdf: `<iframe src="${escape(directPath)}" title="${escape(row.title)}" style="width:100%;height:100%;border:0"></iframe>`,
+        text: `<pre style="margin:0;height:100%;overflow:auto;padding:16px;white-space:pre-wrap;word-break:break-word;font:14px/1.6 ui-monospace,Menlo,monospace">${escape(text ?? '')}</pre>`,
+        link: `<a href="${escape(row.target_url ?? pageUrl)}" target="_blank" rel="noopener" style="display:flex;height:100%;align-items:center;justify-content:center;font:15px sans-serif">${escape(row.target_url ?? row.title)}</a>`,
+        file: `<a href="${escape(pageUrl)}" target="_blank" rel="noopener" style="display:flex;height:100%;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:15px sans-serif;color:inherit;text-decoration:none"><span style="font-size:40px">📄</span>${escape(row.filename)}</a>`,
+    }[row.kind];
+
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${escape(row.title)}</title>
+<style>
+html, body { margin: 0; height: 100%; background: transparent; color: #16181d; overflow: hidden; }
+@media (prefers-color-scheme: dark) { body { color: #e9ebf0; } }
+a { color: #3b6ef5; }
+</style>
+</head>
+<body>${body}</body>
+</html>`;
+}
+
 export function passwordPage(row: DropRow, failed: boolean): string {
     return layout({
         title: 'Password required',

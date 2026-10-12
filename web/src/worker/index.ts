@@ -5,7 +5,7 @@ import { isOwner, isOwnerAnywhere, ownerCookieHeader } from './access';
 import { type DropRow, Drops, type Env } from './drops';
 import { contentTypeFor, kindFor } from './kinds';
 import { importer } from './import';
-import { dropPage, messagePage, passwordPage } from './page';
+import { dropPage, embedPage, messagePage, passwordPage } from './page';
 import { unlockToken, verifyPassword } from './password';
 
 type App = { Bindings: Env; Variables: { drops: Drops } };
@@ -220,6 +220,25 @@ app.get('/:id', async (c) => {
     const text = row.kind === 'text' && row.size <= 1_000_000 ? await (await c.env.BUCKET.get(row.object_key))?.text() ?? '' : null;
 
     return c.html(dropPage(row, new URL(c.req.url).origin, text), 200, { 'Cache-Control': 'private, no-store' });
+});
+
+app.get('/:id/embed', async (c) => {
+    const row = await viewableDrop(c);
+
+    if (row instanceof Response) {
+        return row;
+    }
+
+    if (!(await isOwnerAnywhere(c.req.raw, c.env))) {
+        c.executionCtx.waitUntil(c.get('drops').recordVisit(row.id, visitFrom(c.req.raw, 'view')));
+    }
+
+    const text = row.kind === 'text' && row.size <= 1_000_000 ? await (await c.env.BUCKET.get(row.object_key))?.text() ?? '' : null;
+
+    return c.html(embedPage(row, new URL(c.req.url).origin, text), 200, {
+        'Cache-Control': 'private, no-store',
+        'Content-Security-Policy': "frame-ancestors *",
+    });
 });
 
 app.post('/:id/unlock', async (c) => {
