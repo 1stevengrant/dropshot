@@ -21,4 +21,22 @@ struct Drop: Codable, Identifiable, Equatable {
     let byteCount: Int64
     let createdAt: Date
     var localCopy: URL?
+
+    var clipboardHTML: String {
+        let name = Self.escapeHTML(filename)
+
+        if kind == .image {
+            return "<img src=\"\(Self.escapeHTML((directURL ?? url).absoluteString))\" alt=\"\(name)\">"
+        }
+
+        return "<a href=\"\(Self.escapeHTML(url.absoluteString))\">\(name)</a>"
+    }
+
+    private static func escapeHTML(_ value: String) -> String {
+        value.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#39;")
+    }
 }
