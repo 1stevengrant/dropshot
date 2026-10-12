@@ -87,6 +87,7 @@ final class Preferences {
     var microphone: String { didSet { defaults.set(microphone, forKey: Keys.microphone) } }
     var recordSystemAudio: Bool { didSet { defaults.set(recordSystemAudio, forKey: Keys.recordSystemAudio) } }
     var showClicksInRecordings: Bool { didSet { defaults.set(showClicksInRecordings, forKey: Keys.showClicksInRecordings) } }
+    var autoUploadScreenshots: Bool { didSet { defaults.set(autoUploadScreenshots, forKey: Keys.autoUploadScreenshots) } }
     var playSounds: Bool { didSet { defaults.set(playSounds, forKey: Keys.playSounds) } }
     var showNotifications: Bool { didSet { defaults.set(showNotifications, forKey: Keys.showNotifications) } }
     var keepLocalCopies: Bool { didSet { defaults.set(keepLocalCopies, forKey: Keys.keepLocalCopies) } }
@@ -105,6 +106,7 @@ final class Preferences {
             Keys.microphone: MicrophoneChoice.systemDefault,
             Keys.recordSystemAudio: true,
             Keys.showClicksInRecordings: false,
+            Keys.autoUploadScreenshots: false,
             Keys.playSounds: true,
             Keys.showNotifications: true,
             Keys.keepLocalCopies: true,
@@ -127,6 +129,7 @@ final class Preferences {
         microphone = defaults.string(forKey: Keys.microphone) ?? MicrophoneChoice.systemDefault
         recordSystemAudio = defaults.bool(forKey: Keys.recordSystemAudio)
         showClicksInRecordings = defaults.bool(forKey: Keys.showClicksInRecordings)
+        autoUploadScreenshots = defaults.bool(forKey: Keys.autoUploadScreenshots)
         playSounds = defaults.bool(forKey: Keys.playSounds)
         showNotifications = defaults.bool(forKey: Keys.showNotifications)
         keepLocalCopies = defaults.bool(forKey: Keys.keepLocalCopies)
@@ -169,6 +172,7 @@ final class Preferences {
         static let microphone = "capture.microphone"
         static let recordSystemAudio = "capture.recordSystemAudio"
         static let showClicksInRecordings = "capture.showClicks"
+        static let autoUploadScreenshots = "capture.autoUploadScreenshots"
         static let playSounds = "general.playSounds"
         static let showNotifications = "general.showNotifications"
         static let keepLocalCopies = "general.keepLocalCopies"

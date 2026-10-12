@@ -162,6 +162,11 @@ private struct CaptureSettings: View {
                 ForEach(ScreenshotAction.allCases) { Text($0.title).tag($0) }
             }
 
+            Toggle(isOn: $preferences.autoUploadScreenshots) {
+                Text("Automatically upload macOS screenshots")
+                Text("Screenshots and recordings taken with ⌘⇧3, ⌘⇧4 or ⌘⇧5 upload as soon as they're saved. The originals stay where macOS put them.")
+            }
+
             Toggle("Show clicks in recordings", isOn: $preferences.showClicksInRecordings)
 
             Section("Sound") {
