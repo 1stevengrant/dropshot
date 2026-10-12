@@ -84,7 +84,7 @@ export class BucketSync {
         }
 
         const contentType = contentTypeFor(filename, object.httpMetadata?.contentType);
-        const kind = kindFor(filename, contentType);
+        const kind = filename === 'index.html' ? 'link' : kindFor(filename, contentType);
         const targetUrl = kind === 'link' ? await this.redirectTarget(object.key) : this.sourceUrl(object);
 
         await this.drops.insert({

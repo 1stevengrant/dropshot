@@ -19,10 +19,6 @@ export function contentTypeFor(filename: string, stored?: string): string {
 }
 
 export function kindFor(filename: string, contentType: string): DropKind {
-    if (filename === 'index.html') {
-        return 'link';
-    }
-
     if (contentType.startsWith('image/')) {
         return 'image';
     }
