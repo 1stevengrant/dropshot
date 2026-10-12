@@ -194,6 +194,18 @@ app.get('/_test/:file', async (c) => {
     return object ? new Response(object.body, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } }) : c.notFound();
 });
 
+/** Droplr style raw link: d.ghijk.nz/<id>+ serves the file itself. */
+app.on(['GET', 'HEAD'], '/:raw{[A-Za-z0-9_-]{3,40}\\+}', async (c) => {
+    const id = c.req.param('raw').slice(0, -1);
+    const row = await viewableDrop(c, id);
+
+    if (row instanceof Response) {
+        return row;
+    }
+
+    return serveFile(c, row);
+});
+
 app.get('/:id', async (c) => {
     const drops = c.get('drops');
     const row = await viewableDrop(c);
@@ -273,6 +285,10 @@ app.on(['GET', 'HEAD'], '/:id/*', async (c) => {
         return row;
     }
 
+    return serveFile(c, row);
+});
+
+async function serveFile(c: Context<App>, row: DropRow): Promise<Response> {
     const download = c.req.query('download') === '1';
 
     const owner = await isOwnerAnywhere(c.req.raw, c.env);
@@ -286,12 +302,11 @@ app.on(['GET', 'HEAD'], '/:id/*', async (c) => {
     }
 
     return serveObject(c, row, download);
-});
+}
 
 /** Applies expiry, privacy and password rules. Returns the drop, or the response to send instead. */
-async function viewableDrop(c: Context<App>): Promise<DropRow | Response> {
+async function viewableDrop(c: Context<App>, id = c.req.param('id') ?? ''): Promise<DropRow | Response> {
     const drops = c.get('drops');
-    const id = c.req.param('id') ?? '';
     let row = await drops.find(id);
 
     if (!row) {

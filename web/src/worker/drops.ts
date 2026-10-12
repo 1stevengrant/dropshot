@@ -374,8 +374,9 @@ export class Drops {
         return `${this.origin}/${id}`;
     }
 
-    directUrl(row: Pick<DropRow, 'id' | 'filename' | 'object_key'>): string {
-        return `${this.origin}/${row.id}/${encodeURIComponent(row.filename)}`;
+    /** Droplr style raw link; /<id>/<filename> keeps working too. */
+    directUrl(row: Pick<DropRow, 'id'>): string {
+        return `${this.origin}/${row.id}+`;
     }
 
     private async hydrate(rows: DropRow[]): Promise<Drop[]> {
