@@ -35,10 +35,10 @@ Captures use the system screencapture tool, so selection and the recording toolb
 
 You can also drop files or text on the menu bar icon, or use Upload with Dropshot in the Finder Services menu. Folders and multiple files are zipped. After each upload the link is copied to the clipboard. The menu lists recent drops, each with copy link, Markdown and HTML formats.
 
-The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, pixelate and step number tools, with undo and redo. You can upload, copy or save the result.
+The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, pixelate, step number and emoji stamp tools, with undo and redo. You can upload, copy or save the result.
 
 Automation URLs: `dropshot://screenshot`, `annotate`, `record`, `gif`, `stop`, `clipboard`, `note`, and `upload?path=/absolute/file`.
 
 ## Not yet built
 
-Droplr features left out of this version: auto uploading new macOS screenshots, recording countdown, pause and mute, camera bubble, per app plugins, emoji stamps, privacy and self destruct settings, and instant links (copying the link before the upload finishes).
+Droplr features left out of this version: auto uploading new macOS screenshots, recording countdown, pause and mute, camera bubble, per app plugins, privacy and self destruct settings, and instant links (copying the link before the upload finishes).

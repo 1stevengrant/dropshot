@@ -42,6 +42,10 @@ struct AnnotationEditor: View {
             .fixedSize()
             .background { toolShortcuts }
 
+            if document.tool == .emoji {
+                EmojiPicker(selection: $document.emoji)
+            }
+
             HStack(spacing: 4) {
                 ForEach(palette, id: \.self) { color in
                     Button {

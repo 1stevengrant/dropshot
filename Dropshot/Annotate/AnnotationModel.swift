@@ -15,6 +15,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
     case text
     case pixelate
     case step
+    case emoji
 
     var id: String { rawValue }
 
@@ -30,6 +31,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
         case .text: "Text"
         case .pixelate: "Pixelate"
         case .step: "Step number"
+        case .emoji: "Emoji"
         }
     }
 
@@ -45,6 +47,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
         case .text: "textformat"
         case .pixelate: "mosaic"
         case .step: "1.circle"
+        case .emoji: "face.smiling"
         }
     }
 
@@ -60,6 +63,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
         case .text: "t"
         case .pixelate: "x"
         case .step: "n"
+        case .emoji: "j"
         }
     }
 }
@@ -73,6 +77,7 @@ struct Annotation: Identifiable, Equatable {
     var text: String = ""
     var fontSize: CGFloat = 24
     var stepNumber: Int = 0
+    var emoji: String?
 
     var start: CGPoint { points.first ?? .zero }
     var end: CGPoint { points.last ?? .zero }
@@ -99,6 +104,7 @@ final class AnnotationDocument {
     var color: Color = .red
     var lineWidth: CGFloat = 4
     var fontSize: CGFloat = 24
+    var emoji = "👍"
     var draft: Annotation?
     var editingTextID: UUID?
 
@@ -123,6 +129,16 @@ final class AnnotationDocument {
         undoStack.append(annotations)
         redoStack.removeAll()
         change(&annotations)
+    }
+
+    func placeEmoji(at point: CGPoint) {
+        guard !emoji.isEmpty else {
+            return
+        }
+
+        editingTextID = nil
+        let annotation = Annotation(tool: .emoji, points: [point], color: color, lineWidth: lineWidth, fontSize: fontSize, emoji: emoji)
+        commit { $0.append(annotation) }
     }
 
     func undo() {
