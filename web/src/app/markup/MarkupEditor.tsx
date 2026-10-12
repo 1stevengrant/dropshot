@@ -45,6 +45,7 @@ export function MarkupEditor({ src, title, onCancel, onSave }: MarkupEditorProps
             return;
         }
 
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
         context.drawImage(image, 0, 0);
 
         for (const shape of draft ? [...shapes, draft] : shapes) {
