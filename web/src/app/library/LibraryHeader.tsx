@@ -14,7 +14,7 @@ export function LibraryHeader({ search, onSearch, fileInput, onUpload }: Library
     const [shortening, setShortening] = useState(false);
 
     return (
-        <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-panel px-6 py-3">
+        <header className="flex items-center gap-4 border-b border-line bg-panel px-6 py-3">
             <label className="flex flex-1 items-center gap-3 text-muted">
                 <Search size={18} />
                 <input

@@ -156,24 +156,29 @@ export function Library() {
             <Sidebar query={query} filter={filter} boards={boards.data ?? []} tags={tags.data ?? []} onBoardsChanged={refresh} />
 
             <div className="flex min-w-0 flex-1 flex-col">
-                <LibraryHeader search={search} onSearch={changeSearch} fileInput={fileInput} onUpload={upload} />
+                {/* Header and toolbar stay pinned so selection actions are always in reach while scrolling. */}
+                <div className="sticky top-0 z-20">
+                    <LibraryHeader search={search} onSearch={changeSearch} fileInput={fileInput} onUpload={upload} />
+
+                    <div className={`border-b px-6 py-3 backdrop-blur transition-colors ${selected.size > 0 ? 'border-primary/30 bg-accent-soft/95' : 'border-line bg-base-200/95'}`}>
+                        <LibraryToolbar
+                            heading={heading}
+                            total={drops.data?.total}
+                            selected={selected}
+                            boards={boards.data ?? []}
+                            onAddToBoard={(boardId) => addToBoard.mutate({ boardId, ids: [...selected] })}
+                            onDelete={() => remove.mutateAsync([...selected])}
+                            allSelected={allSelected}
+                            onToggleAll={() => setSelected(allSelected ? new Set() : new Set(items.map((drop) => drop.id)))}
+                            view={view}
+                            onViewChange={changeView}
+                            currentSort={currentSort}
+                            onSortChange={changeSort}
+                        />
+                    </div>
+                </div>
 
                 <main className="flex-1 px-6 py-6">
-                    <LibraryToolbar
-                        heading={heading}
-                        total={drops.data?.total}
-                        selected={selected}
-                        boards={boards.data ?? []}
-                        onAddToBoard={(boardId) => addToBoard.mutate({ boardId, ids: [...selected] })}
-                        onDelete={() => remove.mutateAsync([...selected])}
-                        allSelected={allSelected}
-                        onToggleAll={() => setSelected(allSelected ? new Set() : new Set(items.map((drop) => drop.id)))}
-                        view={view}
-                        onViewChange={changeView}
-                        currentSort={currentSort}
-                        onSortChange={changeSort}
-                    />
-
                     {uploading > 0 && (
                         <div role="status" className="alert alert-info alert-soft mb-4 py-2 text-sm"><span className="loading loading-spinner loading-sm" /> Uploading {uploading} file{uploading === 1 ? '' : 's'}…</div>
                     )}

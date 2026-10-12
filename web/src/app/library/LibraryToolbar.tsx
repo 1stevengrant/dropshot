@@ -23,7 +23,7 @@ export function LibraryToolbar({
     heading, total, selected, boards, onAddToBoard, onDelete, allSelected, onToggleAll, view, onViewChange, currentSort, onSortChange,
 }: LibraryToolbarProps) {
     return (
-        <div className="mb-5 flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
             <h1 className="flex-1 text-2xl font-semibold">
                 {heading}
                 {total !== undefined && <span className="ml-2 text-base font-normal text-muted">{total.toLocaleString()}</span>}
