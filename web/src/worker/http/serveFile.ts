@@ -9,7 +9,7 @@ export async function serveFile(c: AppContext, row: DropRow): Promise<Response> 
 
     const owner = await isOwnerAnywhere(c.req.raw, c.env);
 
-    if (download && !row.allow_download && !owner) {
+    if ((download || row.kind === 'file') && !row.allow_download && !owner) {
         return c.text('Downloads are disabled for this drop.', 403);
     }
 
