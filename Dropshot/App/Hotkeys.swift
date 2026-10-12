@@ -9,6 +9,8 @@ extension KeyboardShortcuts.Name {
     static let recordGIF = Self("recordGIF", default: .init(.two, modifiers: [.option, .shift]))
     static let uploadFile = Self("uploadFile", default: .init(.six, modifiers: [.option, .shift]))
     static let newNote = Self("newNote", default: .init(.n, modifiers: [.option, .shift]))
+    /// Droplr had no default for code snippets.
+    static let newCodeSnippet = Self("newCodeSnippet")
     static let finishRecording = Self("finishRecording", default: .init(.d, modifiers: [.command, .shift]))
 }
 
@@ -21,6 +23,7 @@ enum Hotkeys {
         KeyboardShortcuts.onKeyUp(for: .recordGIF) { actions.toggleRecording(as: .gif) }
         KeyboardShortcuts.onKeyUp(for: .uploadFile) { actions.chooseFiles() }
         KeyboardShortcuts.onKeyUp(for: .newNote) { actions.newNote() }
+        KeyboardShortcuts.onKeyUp(for: .newCodeSnippet) { actions.newCodeSnippet() }
         KeyboardShortcuts.onKeyUp(for: .finishRecording) { actions.stopRecording() }
     }
 }

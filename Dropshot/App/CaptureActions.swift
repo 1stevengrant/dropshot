@@ -91,4 +91,8 @@ final class CaptureActions {
     func newNote() {
         NoteWindowController.present()
     }
+
+    func newCodeSnippet() {
+        CodeSnippetWindowController.present()
+    }
 }

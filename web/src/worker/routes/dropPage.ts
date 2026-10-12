@@ -1,6 +1,7 @@
 import { isOwnerAnywhere } from '../auth/ownerCookie';
 import { createRouter } from '../app';
 import { appShell } from '../http/appShell';
+import { dropText } from '../http/dropText';
 import { viewableDrop } from '../http/viewableDrop';
 import { dropPage as renderDropPage } from '../pages/dropPage';
 import { visitFrom } from '../visits/visitFrom';
@@ -32,7 +33,7 @@ dropPage.get('/:id', async (c) => {
         return c.redirect(row.target_url, 302);
     }
 
-    const text = row.kind === 'text' && row.size <= 1_000_000 ? await (await c.env.BUCKET.get(row.object_key))?.text() ?? '' : null;
+    const text = await dropText(c.env, row);
 
     return c.html(renderDropPage(row, new URL(c.req.url).origin, text), 200, { 'Cache-Control': 'private, no-store' });
 });

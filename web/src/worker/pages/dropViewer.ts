@@ -1,4 +1,5 @@
 import type { DropRow } from '../drops';
+import { codeBlock } from './codeBlock';
 import { downloadIcon, escape, formatBytes } from './html';
 
 /** The media shown on a drop page, chosen by the drop's kind. */
@@ -18,8 +19,19 @@ export function dropViewer(row: DropRow, src: string, text: string | null): stri
             return `<iframe class="h-[calc(100vh-10rem)] w-full rounded-box border border-base-300 bg-white" src="${url}" title="${escape(row.title)}"></iframe>`;
         case 'text':
             return `<div class="card w-full max-w-3xl border border-base-300 bg-base-100 shadow-sm"><pre class="card-body overflow-auto font-mono text-sm leading-relaxed whitespace-pre-wrap break-words">${escape(text ?? '')}</pre></div>`;
+        case 'code':
+            if (text !== null) {
+                return codeBlock(text, row.filename, `/${row.id}+`, 'w-full max-w-5xl shadow-sm');
+            }
+
+            return fileCard(row, url);
         default:
-            return `<div class="card w-full max-w-md border border-base-300 bg-base-100 shadow-sm">
+            return fileCard(row, url);
+    }
+}
+
+function fileCard(row: DropRow, url: string): string {
+    return `<div class="card w-full max-w-md border border-base-300 bg-base-100 shadow-sm">
     <div class="card-body items-center text-center">
         <div class="text-5xl" aria-hidden="true">📄</div>
         <h1 class="card-title break-all">${escape(row.filename)}</h1>
@@ -31,5 +43,4 @@ export function dropViewer(row: DropRow, src: string, text: string | null): stri
         }</div>
     </div>
 </div>`;
-    }
 }

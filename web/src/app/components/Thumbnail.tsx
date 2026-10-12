@@ -1,4 +1,4 @@
-import { FileText, File as FileIcon, Link2, Music, FileType } from 'lucide-react';
+import { FileCode, FileText, File as FileIcon, Link2, Music, FileType } from 'lucide-react';
 import type { Drop } from '../../shared/types';
 import { previewUrl } from '../lib/api';
 
@@ -12,7 +12,7 @@ export function Thumbnail({ drop, className = '' }: { drop: Drop; className?: st
         return <video src={`${previewUrl(drop)}#t=0.5`} preload="metadata" muted playsInline className={`h-full w-full object-cover object-top ${className}`} />;
     }
 
-    const Icon = { text: FileText, link: Link2, audio: Music, pdf: FileType, file: FileIcon }[drop.kind] ?? FileIcon;
+    const Icon = { code: FileCode, text: FileText, link: Link2, audio: Music, pdf: FileType, file: FileIcon }[drop.kind] ?? FileIcon;
 
     return (
         <div className={`flex h-full w-full flex-col items-center justify-center gap-2 bg-accent-soft text-accent ${className}`}>

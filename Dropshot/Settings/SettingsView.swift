@@ -164,6 +164,7 @@ private struct ShortcutSettings: View {
             KeyboardShortcuts.Recorder("Finish recording:", name: .finishRecording)
             KeyboardShortcuts.Recorder("Upload file:", name: .uploadFile)
             KeyboardShortcuts.Recorder("New note:", name: .newNote)
+            KeyboardShortcuts.Recorder("New code snippet:", name: .newCodeSnippet)
         }
         .formStyle(.grouped)
     }

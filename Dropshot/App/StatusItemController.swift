@@ -139,6 +139,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         menu.addItem(item("Upload File…", symbol: "arrow.up.doc", action: #selector(uploadFile), hotkey: .uploadFile))
         menu.addItem(item("Upload Clipboard", symbol: "doc.on.clipboard", action: #selector(uploadClipboard), hotkey: .uploadClipboard))
         menu.addItem(item("New Note…", symbol: "note.text", action: #selector(newNote), hotkey: .newNote))
+        menu.addItem(item("New Code Snippet…", symbol: "chevron.left.forwardslash.chevron.right", action: #selector(newCodeSnippet), hotkey: .newCodeSnippet))
 
         if !uploads.activeUploads.isEmpty {
             menu.addItem(.separator())
@@ -230,6 +231,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         let symbol = switch drop.kind {
         case .image: "photo"
         case .video: "film"
+        case .code: "chevron.left.forwardslash.chevron.right"
         case .text: "doc.plaintext"
         case .link: "link"
         case .file: "doc"
@@ -266,6 +268,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
     @objc private func uploadFile() { actions.chooseFiles() }
     @objc private func uploadClipboard() { uploads.uploadPasteboard() }
     @objc private func newNote() { actions.newNote() }
+    @objc private func newCodeSnippet() { actions.newCodeSnippet() }
     @objc private func openSettings() { SettingsOpener.open() }
     @objc private func quit() { NSApp.terminate(nil) }
     @objc private func clearHistory() { store.clear() }

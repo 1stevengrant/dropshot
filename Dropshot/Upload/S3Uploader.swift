@@ -151,6 +151,11 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
     static func contentType(for filename: String) -> String {
         let ext = (filename as NSString).pathExtension
 
+        // Source files are shown as text; some extensions (.ts) would otherwise be typed as video.
+        if CodeLanguage.matching(extension: ext) != nil {
+            return "text/plain; charset=utf-8"
+        }
+
         return UTType(filenameExtension: ext)?.preferredMIMEType ?? "application/octet-stream"
     }
 
@@ -158,7 +163,7 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
     static func contentDisposition(for filename: String) -> String {
         let ext = (filename as NSString).pathExtension
         let type = UTType(filenameExtension: ext)
-        let inline = [UTType.image, .movie, .pdf, .text, .audio].contains { type?.conforms(to: $0) == true }
+        let inline = CodeLanguage.matching(extension: ext) != nil || [UTType.image, .movie, .pdf, .text, .audio].contains { type?.conforms(to: $0) == true }
         let ascii = filename.replacingOccurrences(of: "\"", with: "").unicodeScalars.map { $0.isASCII ? String($0) : "_" }.joined()
         let encoded = S3Signer.encodePathSegment(filename)
 

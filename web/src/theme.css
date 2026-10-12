@@ -82,3 +82,110 @@
     --color-danger: var(--color-error);
     --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
 }
+
+/* Code drops: a language bar over a line number gutter and the highlighted code. Token colours follow GitHub's. */
+@layer components {
+    .code-block {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--color-base-300);
+        border-radius: var(--radius-box);
+        background: var(--color-base-100);
+        text-align: left;
+    }
+
+    .code-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--color-base-300);
+        background: var(--color-base-200);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+    }
+
+    .code-scroll {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        overflow: auto;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.8125rem;
+        line-height: 1.6;
+    }
+
+    .code-gutter {
+        position: sticky;
+        left: 0;
+        flex-shrink: 0;
+        padding: 1rem 0.75rem 1rem 1rem;
+        border-right: 1px solid var(--color-base-300);
+        background: var(--color-base-100);
+        text-align: right;
+        color: color-mix(in oklab, var(--color-base-content) 35%, transparent);
+        user-select: none;
+    }
+
+    .code-body {
+        flex: 1;
+        padding: 1rem;
+        white-space: pre;
+        color: var(--color-base-content);
+    }
+}
+
+:root {
+    --hl-keyword: #cf222e;
+    --hl-title: #8250df;
+    --hl-string: #0a3069;
+    --hl-number: #0550ae;
+    --hl-comment: #6e7781;
+    --hl-variable: #953800;
+    --hl-tag: #116329;
+    --hl-addition-bg: #dafbe1;
+    --hl-deletion-bg: #ffebe9;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="dropshot"]) {
+        --hl-keyword: #ff7b72;
+        --hl-title: #d2a8ff;
+        --hl-string: #a5d6ff;
+        --hl-number: #79c0ff;
+        --hl-comment: #8b949e;
+        --hl-variable: #ffa657;
+        --hl-tag: #7ee787;
+        --hl-addition-bg: #033a16;
+        --hl-deletion-bg: #67060c;
+    }
+}
+
+[data-theme="dropshot-dark"] {
+    --hl-keyword: #ff7b72;
+    --hl-title: #d2a8ff;
+    --hl-string: #a5d6ff;
+    --hl-number: #79c0ff;
+    --hl-comment: #8b949e;
+    --hl-variable: #ffa657;
+    --hl-tag: #7ee787;
+    --hl-addition-bg: #033a16;
+    --hl-deletion-bg: #67060c;
+}
+
+.hljs-keyword, .hljs-doctag, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-meta .hljs-keyword { color: var(--hl-keyword); }
+.hljs-title, .hljs-title.class_, .hljs-title.function_ { color: var(--hl-title); }
+.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id { color: var(--hl-number); }
+.hljs-regexp, .hljs-string, .hljs-meta .hljs-string { color: var(--hl-string); }
+.hljs-built_in, .hljs-symbol, .hljs-params { color: var(--hl-variable); }
+.hljs-comment, .hljs-code, .hljs-formula { color: var(--hl-comment); font-style: italic; }
+.hljs-name, .hljs-quote, .hljs-selector-tag, .hljs-selector-pseudo { color: var(--hl-tag); }
+.hljs-section { color: var(--hl-number); font-weight: 600; }
+.hljs-bullet { color: var(--hl-variable); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }
+.hljs-addition { color: var(--hl-tag); background: var(--hl-addition-bg); }
+.hljs-deletion { color: var(--hl-keyword); background: var(--hl-deletion-bg); }

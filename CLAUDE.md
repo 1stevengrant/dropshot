@@ -73,5 +73,6 @@ XcodeGen project with `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor` for the app and
 * One responsibility per file in both the Worker and the dashboard (one component, router, page or helper per file). Follow that when adding code.
 * Everything in the UI uses daisyUI components and the theme tokens in `theme.css`; avoid ad hoc colours.
 * Dashboard confirmations use `ConfirmDialog`, never `window.confirm`.
+* Code drops are recognised by file extension. The list lives twice, in `web/src/shared/codeLanguages.ts` and `Dropshot/Drops/CodeLanguage.swift`; change both together. Highlighting runs through `web/src/shared/highlightCode.ts`, server side for public pages and lazily loaded in the dashboard.
 * Docs and READMEs avoid dashes as punctuation.
 * `/_import` only works while the `IMPORT_TOKEN` secret exists; it has been deleted, so the importer is off.

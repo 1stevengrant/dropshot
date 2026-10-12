@@ -1,3 +1,4 @@
+import { codeLanguageFor } from '../shared/codeLanguages';
 import type { DropKind } from '../shared/types';
 
 const extensionTypes: Record<string, string> = {
@@ -36,6 +37,10 @@ export function kindFor(filename: string, contentType: string): DropKind {
 
     if (contentType === 'application/pdf') {
         return 'pdf';
+    }
+
+    if (codeLanguageFor(filename)) {
+        return 'code';
     }
 
     if (contentType.startsWith('text/') || contentType === 'application/json') {

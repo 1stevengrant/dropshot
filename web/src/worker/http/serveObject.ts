@@ -21,7 +21,12 @@ export async function serveObject(c: AppContext, row: DropRow, download: boolean
     headers.set('Content-Disposition', `${download ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(row.filename)}`);
     headers.set('X-Content-Type-Options', 'nosniff');
 
-    if (row.kind === 'text' || row.kind === 'link' || row.content_type.includes('html') || row.content_type.includes('svg')) {
+    if (row.kind === 'code') {
+        // Show source as text in the browser, whatever type it was uploaded with.
+        headers.set('Content-Type', 'text/plain; charset=utf-8');
+    }
+
+    if (row.kind === 'text' || row.kind === 'code' || row.kind === 'link' || row.content_type.includes('html') || row.content_type.includes('svg')) {
         // Never let uploaded HTML or SVG run scripts on this origin.
         headers.set('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
     }

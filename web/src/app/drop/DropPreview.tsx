@@ -2,11 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, Link2 } from 'lucide-react';
 import type { Drop } from '../../shared/types';
 import { previewUrl } from '../lib/api';
+import { CodeBlock } from '../components/CodeBlock';
 import { formatBytes } from '../lib/format';
 
 export function DropPreview({ drop, version }: { drop: Drop; version: number }) {
     const src = version ? `${previewUrl(drop)}?v=${version}` : previewUrl(drop);
-    const text = useQuery({ queryKey: ['text', drop.id], queryFn: async () => (await fetch(src)).text(), enabled: drop.kind === 'text' });
+    const text = useQuery({ queryKey: ['text', drop.id], queryFn: async () => (await fetch(src)).text(), enabled: drop.kind === 'text' || drop.kind === 'code' });
 
     switch (drop.kind) {
         case 'image':
@@ -19,6 +20,10 @@ export function DropPreview({ drop, version }: { drop: Drop; version: number }) 
             return <iframe src={src} title={drop.title} className="h-full w-full rounded-lg border border-line bg-white" />;
         case 'text':
             return <pre className="max-h-full w-full max-w-3xl overflow-auto rounded-xl border border-line bg-panel p-6 font-mono text-sm whitespace-pre-wrap">{text.data ?? 'Loading…'}</pre>;
+        case 'code':
+            return text.data === undefined
+                ? <span className="loading loading-spinner" />
+                : <CodeBlock cacheKey={[drop.id, version]} text={text.data} filename={drop.filename} rawHref={`${drop.pageUrl}+`} />;
         case 'link':
             return (
                 <div className="rounded-xl border border-line bg-panel p-8 text-center">

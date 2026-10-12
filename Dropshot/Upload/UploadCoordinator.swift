@@ -64,6 +64,22 @@ final class UploadCoordinator {
         Task { await upload(fileAt: fileURL, kind: .text) }
     }
 
+    func upload(snippet code: String, title: String, language: CodeLanguage) {
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "\(language.label) snippet \(Self.timestamp())" : title
+        let safeName = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+        let fileURL = DropStore.capturesDirectory.appending(path: "\(safeName).\(language.fileExtension)")
+
+        do {
+            try code.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            report(error)
+
+            return
+        }
+
+        Task { await upload(fileAt: fileURL, kind: .code) }
+    }
+
     func uploadPasteboard(_ pasteboard: NSPasteboard = .general) {
         if let files = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !files.isEmpty {
             upload(files: files)
@@ -235,6 +251,10 @@ final class UploadCoordinator {
     }
 
     static func kind(for url: URL) -> DropKind {
+        if CodeLanguage.matching(extension: url.pathExtension) != nil {
+            return .code
+        }
+
         guard let type = UTType(filenameExtension: url.pathExtension) else {
             return .file
         }

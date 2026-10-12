@@ -1,5 +1,6 @@
 import { Search } from 'lucide-react';
 import { type RefObject, useState } from 'react';
+import { CodeSnippetDialog } from './CodeSnippetDialog';
 import { ShortenLinkDialog } from './ShortenLinkDialog';
 import { UploadMenu } from './UploadMenu';
 
@@ -12,6 +13,7 @@ interface LibraryHeaderProps {
 
 export function LibraryHeader({ search, onSearch, fileInput, onUpload }: LibraryHeaderProps) {
     const [shortening, setShortening] = useState(false);
+    const [writingSnippet, setWritingSnippet] = useState(false);
 
     return (
         <header className="flex items-center gap-4 border-b border-line bg-panel px-6 py-3">
@@ -25,9 +27,10 @@ export function LibraryHeader({ search, onSearch, fileInput, onUpload }: Library
                     className="w-full bg-transparent py-2 text-ink outline-none placeholder:text-muted"
                 />
             </label>
-            <UploadMenu onUploadFiles={() => fileInput.current?.click()} onShortenLink={() => setShortening(true)} />
+            <UploadMenu onUploadFiles={() => fileInput.current?.click()} onShortenLink={() => setShortening(true)} onNewSnippet={() => setWritingSnippet(true)} />
             <input ref={fileInput} type="file" multiple hidden onChange={(event) => { onUpload(event.target.files ?? []); event.target.value = ''; }} />
             {shortening && <ShortenLinkDialog onClose={() => setShortening(false)} />}
+            {writingSnippet && <CodeSnippetDialog onClose={() => setWritingSnippet(false)} />}
         </header>
     );
 }

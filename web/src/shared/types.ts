@@ -1,4 +1,4 @@
-export type DropKind = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'link' | 'file';
+export type DropKind = 'image' | 'video' | 'audio' | 'pdf' | 'code' | 'text' | 'link' | 'file';
 
 export type Privacy = 'public' | 'password' | 'private';
 

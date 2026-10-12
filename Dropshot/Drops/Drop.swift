@@ -4,6 +4,7 @@ enum DropKind: String, Codable {
     case file
     case image
     case video
+    case code
     case text
     case link
 }
