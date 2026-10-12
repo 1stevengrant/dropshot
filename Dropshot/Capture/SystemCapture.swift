@@ -23,7 +23,7 @@ enum SystemCapture {
     static func screenshot() async throws -> URL? {
         try ensurePermission()
 
-        let url = DropStore.capturesDirectory.appending(path: "Screenshot \(UploadCoordinator.timestamp()).png")
+        let url = try UploadCoordinator.captureFile(named: "Screenshot \(UploadCoordinator.timestamp()).png")
         _ = try await ScreencaptureProcess.run(arguments: ["-i", "-x", url.path])
 
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
@@ -59,7 +59,7 @@ final class ScreenRecorder {
 
         try SystemCapture.ensurePermission()
 
-        let url = DropStore.capturesDirectory.appending(path: "Recording \(UploadCoordinator.timestamp()).mov")
+        let url = try UploadCoordinator.captureFile(named: "Recording \(UploadCoordinator.timestamp()).mov")
         var arguments = ["-i", "-v", "-J", "video", "-U", "-x"]
 
         arguments += MicrophoneChoice.arguments(for: microphone)
