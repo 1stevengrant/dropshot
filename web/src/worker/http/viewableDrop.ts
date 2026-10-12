@@ -4,7 +4,9 @@ import type { AppContext } from '../app';
 import type { DropRow } from '../drops';
 import { messagePage } from '../pages/messagePage';
 import { passwordPage } from '../pages/passwordPage';
+import { pendingPage } from '../pages/pendingPage';
 import { unlockToken } from '../password';
+import { isUploadPending } from '../uploads/pendingUpload';
 
 /** Applies expiry, privacy and password rules. Returns the drop, or the response to send instead. */
 export async function viewableDrop(c: AppContext, id = c.req.param('id') ?? ''): Promise<DropRow | Response> {
@@ -15,6 +17,10 @@ export async function viewableDrop(c: AppContext, id = c.req.param('id') ?? ''):
         // A drop uploaded moments ago by the Mac app may not be registered yet.
         await c.get('sync').syncIfStale(5_000);
         row = await drops.find(id);
+    }
+
+    if (!row && (await isUploadPending(c.env, id))) {
+        return c.html(pendingPage(), 202, { 'Cache-Control': 'no-store' });
     }
 
     if (!row) {

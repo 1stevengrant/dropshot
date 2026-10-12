@@ -90,6 +90,7 @@ final class Preferences {
     var playSounds: Bool { didSet { defaults.set(playSounds, forKey: Keys.playSounds) } }
     var showNotifications: Bool { didSet { defaults.set(showNotifications, forKey: Keys.showNotifications) } }
     var keepLocalCopies: Bool { didSet { defaults.set(keepLocalCopies, forKey: Keys.keepLocalCopies) } }
+    var instantLinks: Bool { didSet { defaults.set(instantLinks, forKey: Keys.instantLinks) } }
     var defaultPrivacy: DropPrivacy { didSet { defaults.set(defaultPrivacy.rawValue, forKey: Keys.defaultPrivacy) } }
     var defaultSelfDestruct: SelfDestruct { didSet { defaults.set(defaultSelfDestruct.rawValue, forKey: Keys.defaultSelfDestruct) } }
     var defaultAllowDownload: Bool { didSet { defaults.set(defaultAllowDownload, forKey: Keys.defaultAllowDownload) } }
@@ -107,6 +108,7 @@ final class Preferences {
             Keys.playSounds: true,
             Keys.showNotifications: true,
             Keys.keepLocalCopies: true,
+            Keys.instantLinks: true,
             Keys.defaultPrivacy: DropPrivacy.public.rawValue,
             Keys.defaultSelfDestruct: SelfDestruct.keep.rawValue,
             Keys.defaultAllowDownload: true,
@@ -128,6 +130,7 @@ final class Preferences {
         playSounds = defaults.bool(forKey: Keys.playSounds)
         showNotifications = defaults.bool(forKey: Keys.showNotifications)
         keepLocalCopies = defaults.bool(forKey: Keys.keepLocalCopies)
+        instantLinks = defaults.bool(forKey: Keys.instantLinks)
         defaultPrivacy = DropPrivacy(rawValue: defaults.string(forKey: Keys.defaultPrivacy) ?? "") ?? .public
         defaultSelfDestruct = SelfDestruct(rawValue: defaults.string(forKey: Keys.defaultSelfDestruct) ?? "") ?? .keep
         defaultAllowDownload = defaults.bool(forKey: Keys.defaultAllowDownload)
@@ -169,6 +172,7 @@ final class Preferences {
         static let playSounds = "general.playSounds"
         static let showNotifications = "general.showNotifications"
         static let keepLocalCopies = "general.keepLocalCopies"
+        static let instantLinks = "general.instantLinks"
         static let defaultPrivacy = "drops.privacy"
         static let defaultSelfDestruct = "drops.selfDestruct"
         static let defaultAllowDownload = "drops.allowDownload"
