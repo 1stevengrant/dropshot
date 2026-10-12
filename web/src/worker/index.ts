@@ -48,7 +48,8 @@ app.get('/app/*', async (c) => {
 
 app.get('/api/drops', async (c) => {
     const drops = c.get('drops');
-    await drops.syncIfStale();
+    // Listing the bucket takes seconds with thousands of drops; never make the dashboard wait for it.
+    c.executionCtx.waitUntil(drops.syncIfStale());
 
     const query: DropQuery = {
         q: c.req.query('q') || undefined,

@@ -293,10 +293,16 @@ export function Library() {
                         <div className="mb-4 rounded-lg bg-accent-soft px-4 py-2 text-sm text-accent">Uploading {uploading} file{uploading === 1 ? '' : 's'}…</div>
                     )}
 
+                    {drops.isFetching && (
+                        <div className="fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-accent/20" role="progressbar" aria-label="Loading drops">
+                            <div className="h-full w-1/3 animate-[loading_1s_ease-in-out_infinite] bg-accent" />
+                        </div>
+                    )}
+
                     {drops.isError && <div className="rounded-lg bg-danger/10 px-4 py-3 text-danger">{drops.error.message}</div>}
 
                     {view === 'grid' ? (
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
+                        <div className={`grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 transition-opacity ${drops.isPlaceholderData ? 'opacity-60' : ''}`}>
                             <button
                                 type="button"
                                 onClick={() => fileInput.current?.click()}
@@ -306,10 +312,13 @@ export function Library() {
                                 <span className="text-lg font-medium text-ink">Drop files here</span>
                                 <span className="text-sm">or use the Upload file button</span>
                             </button>
+                            {drops.isPending && Array.from({ length: 11 }, (_, index) => <SkeletonCard key={index} />)}
                             {items.map((drop) => (
                                 <DropCard key={drop.id} drop={drop} selected={selected.has(drop.id)} onToggle={() => toggle(drop.id)} />
                             ))}
                         </div>
+                    ) : drops.isPending ? (
+                        <p className="py-10 text-center text-muted">Loading drops…</p>
                     ) : (
                         <DropTable drops={items} selected={selected} onToggle={toggle} />
                     )}
@@ -329,6 +338,19 @@ export function Library() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function SkeletonCard() {
+    return (
+        <div className="flex animate-pulse flex-col overflow-hidden rounded-xl border border-line bg-panel" aria-hidden="true">
+            <div className="aspect-[4/3] bg-canvas" />
+            <div className="flex flex-col gap-2 p-4">
+                <div className="h-4 w-3/4 rounded bg-canvas" />
+                <div className="h-3 w-1/2 rounded bg-canvas" />
+                <div className="mt-3 h-3 w-1/3 rounded bg-canvas" />
+            </div>
         </div>
     );
 }
