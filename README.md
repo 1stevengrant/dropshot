@@ -46,6 +46,18 @@ The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen
 
 Automation URLs: `dropshot://screenshot`, `annotate`, `record`, `gif`, `stop`, `pause`, `mute`, `clipboard`, `note`, and `upload?path=/absolute/file`.
 
+## Chrome extension
+
+`extension/` captures the tab you're looking at, including anything that needs you to be signed in, and uploads it as a drop. A full page capture scrolls one screen at a time and stitches the result, like GoFullPage. Pages that scroll inside a panel (mail, docs, dashboards) capture that panel, and very long pages are saved as JPEG once they pass WebP's height limit.
+
+```bash
+cd extension
+npm install
+npm run build
+```
+
+Open `chrome://extensions`, turn on Developer mode, choose Load unpacked and pick `extension/dist`. Sign in once at `https://d.ghijk.nz/app`, because the extension uploads with that Cloudflare Access session. Then click the Dropshot icon or press ⌥⇧D for the full page. To capture part of it, press ⌥⇧S or right click and choose Capture area with Dropshot: click an element (even one taller than the screen), or drag a rectangle. The arrow keys move the outline to the parent or child element, Enter captures it and Esc cancels. Either way the link is copied and the drop opens in a new tab. If the session has expired, the icon shows `!` and the sign in page opens; capture again afterwards. After rebuilding, reload the extension on `chrome://extensions`.
+
 ## Not yet built
 
 Droplr features left out of this version: camera bubble and per app plugins.

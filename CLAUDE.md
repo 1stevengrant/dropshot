@@ -2,10 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Dropshot is a self hosted rebuild of Droplr with two halves that share one R2 bucket:
+Dropshot is a self hosted rebuild of Droplr with two halves that share one R2 bucket, plus a Chrome extension:
 
 * `Dropshot/`: a Swift 6 menu bar app for macOS 15+ that captures and uploads straight to S3 compatible storage.
 * `web/`: a Cloudflare Worker (Hono, D1, R2, Cloudflare Access) serving `d.ghijk.nz`. It shows public drop pages and hosts the owner's React dashboard.
+* `extension/`: a Manifest V3 Chrome extension that captures the current tab's full page and uploads it through `/api/upload`, using the browser's Cloudflare Access session (no token of its own).
 
 `re/SPEC.md` is the behavioural spec reverse engineered from Droplr 5.9.19. Everything else in `re/` is gitignored decompiler output and must stay out of git. `import/` holds the one-off Droplr importer (its data files and token are gitignored).
 
@@ -31,6 +32,8 @@ npx wrangler d1 migrations apply dropshot --local
 npm run migrate          # remote D1 migrations
 npm run deploy           # build + wrangler deploy (production, live domain)
 ```
+
+Extension (run from `extension/`): `npm run build` writes `dist/`, which is loaded unpacked from `chrome://extensions`; `npm run typecheck` checks it.
 
 There is no web test suite. Verify Worker changes with `wrangler dev` and curl. `.dev.vars` sets `DEV_OWNER=1` so every local request is the owner; send the header `X-Dev-Visitor: 1` to act as a visitor. Never set `DEV_OWNER` on the deployed Worker.
 
@@ -74,5 +77,6 @@ XcodeGen project with `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor` for the app and
 * Everything in the UI uses daisyUI components and the theme tokens in `theme.css`; avoid ad hoc colours.
 * Dashboard confirmations use `ConfirmDialog`, never `window.confirm`.
 * Code drops are recognised by file extension. The list lives twice, in `web/src/shared/codeLanguages.ts` and `Dropshot/Drops/CodeLanguage.swift`; change both together. Highlighting runs through `web/src/shared/highlightCode.ts`, server side for public pages and lazily loaded in the dashboard.
+* Full page web captures scroll one viewport at a time and stitch the tiles (never grow the viewport, which stretches `100vh` sections). The logic lives three times: `Dropshot/Capture/WebPageCapture.swift`, `web/src/worker/screenshots/` and `extension/src/`; change them together.
 * Docs and READMEs avoid dashes as punctuation.
 * `/_import` only works while the `IMPORT_TOKEN` secret exists; it has been deleted, so the importer is off.
