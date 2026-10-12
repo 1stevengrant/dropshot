@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import WebKit
 
 /// Renders a web page offscreen in WebKit and snapshots its full length. The menu bar twin of the Worker's
@@ -11,11 +12,11 @@ final class WebPageCapture: NSObject, WKNavigationDelegate {
 
     private var navigation: CheckedContinuation<Void, Error>?
 
-    static func capture(_ url: URL) async throws -> (png: Data, title: String) {
+    static func capture(_ url: URL) async throws -> (image: Data, fileExtension: String, title: String) {
         try await WebPageCapture().capture(url)
     }
 
-    private func capture(_ url: URL) async throws -> (png: Data, title: String) {
+    private func capture(_ url: URL) async throws -> (image: Data, fileExtension: String, title: String) {
         let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: Self.width, height: 900))
         webView.navigationDelegate = self
 
@@ -46,13 +47,35 @@ final class WebPageCapture: NSObject, WKNavigationDelegate {
         webView.frame = CGRect(x: 0, y: 0, width: Self.width, height: height)
         try await Task.sleep(for: .seconds(1))
 
-        let image = try await webView.takeSnapshot(configuration: nil)
+        let snapshot = try await webView.takeSnapshot(configuration: nil)
 
-        guard let png = image.pngData else {
+        if let avif = Self.avifData(snapshot) {
+            return (avif, "avif", title)
+        }
+
+        guard let png = snapshot.pngData else {
             throw CaptureError.failed("Couldn't encode the capture of \(url.host() ?? url.absoluteString).")
         }
 
-        return (png, title)
+        return (png, "png", title)
+    }
+
+    /// AVIF is about a fifth of the PNG's size with no visible loss on text at 2x, and macOS encodes it natively.
+    /// WebP would need a library and can't hold the tallest 2x captures (16,383px limit).
+    private static func avifData(_ image: NSImage) -> Data? {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return nil
+        }
+
+        let data = NSMutableData()
+
+        guard let destination = CGImageDestinationCreateWithData(data, "public.avif" as CFString, 1, nil) else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(destination, cgImage, [kCGImageDestinationLossyCompressionQuality: 0.6] as CFDictionary)
+
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
     }
 
     private func load(_ url: URL, in webView: WKWebView) async throws {

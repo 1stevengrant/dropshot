@@ -103,9 +103,9 @@ final class CaptureActions {
         do {
             let host = (url.host() ?? "page").replacingOccurrences(of: "/", with: "-")
             let capture = try await UploadCoordinator.shared.preparing(host) { try await WebPageCapture.capture(url) }
-            let fileURL = DropStore.capturesDirectory.appending(path: "Screenshot of \(host).png")
+            let fileURL = DropStore.capturesDirectory.appending(path: "Screenshot of \(host).\(capture.fileExtension)")
 
-            try capture.png.write(to: fileURL)
+            try capture.image.write(to: fileURL)
 
             await UploadCoordinator.shared.upload(fileAt: fileURL, kind: .image, metadata: ["source-url": url.absoluteString, "title": capture.title.isEmpty ? host : capture.title])
         } catch {

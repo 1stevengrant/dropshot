@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast/useToast';
 import { api, previewUrl } from '../lib/api';
 import { copy } from '../lib/format';
 import { libraryLocation } from '../lib/libraryLocation';
+import { uploadThumbnail } from '../lib/uploadThumbnail';
 import { MarkupEditor } from '../markup/MarkupEditor';
 import { DropHeader } from './DropHeader';
 import { DropPreview } from './DropPreview';
@@ -26,6 +27,7 @@ export function DropView({ drop }: { drop: Drop }) {
 
         if (mode === 'replace') {
             const updated = await api.replaceFile(drop.id, image, filename);
+            await uploadThumbnail(updated, image);
             queryClient.setQueryData(['drop', drop.id], updated);
             queryClient.invalidateQueries({ queryKey: ['drops'] });
             setVersion((value) => value + 1);
@@ -36,6 +38,7 @@ export function DropView({ drop }: { drop: Drop }) {
         }
 
         const created = await api.upload(image, filename, `${drop.title} (markup)`);
+        await uploadThumbnail(created, image);
         await copy(created.pageUrl).catch(() => {});
         queryClient.invalidateQueries({ queryKey: ['drops'] });
         setMarking(false);

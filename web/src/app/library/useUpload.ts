@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useToast } from '../components/Toast/useToast';
 import { chunkedUpload } from '../lib/chunkedUpload';
 import { copy } from '../lib/format';
+import { uploadThumbnail } from '../lib/uploadThumbnail';
 
 export interface UploadProgress {
     files: number;
@@ -39,7 +40,15 @@ export function useUpload(onUploaded: () => void) {
         }
 
         const results = await Promise.allSettled(
-            list.map((file) => chunkedUpload(file, { onProgress: (bytes) => report(file, bytes) }).finally(() => finish(file))),
+            list.map((file) =>
+                chunkedUpload(file, { onProgress: (bytes) => report(file, bytes) })
+                    .then(async (drop) => {
+                        await uploadThumbnail(drop, file);
+
+                        return drop;
+                    })
+                    .finally(() => finish(file)),
+            ),
         );
         const uploaded = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
 

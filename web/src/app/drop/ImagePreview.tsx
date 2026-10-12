@@ -1,38 +1,30 @@
-import { type KeyboardEvent, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Drop } from '../../shared/types';
+import { attachImageZoom } from '../../shared/imageZoom';
+import { ZoomBar } from './ZoomBar';
 
 /**
- * Images fit the panel; clicking toggles actual size. Web page captures are many screens tall, so they fit the width
- * instead of the height, and zoom to 1440px, the width they were rendered at.
+ * An image drop with zoom: it fits the panel, and web page captures (many screens tall) fit the width and scroll.
+ * The zoom behaviour is shared with the public drop page, see `shared/imageZoom.ts`.
  */
 export function ImagePreview({ drop, src }: { drop: Drop; src: string }) {
-    const [zoomed, setZoomed] = useState(false);
-    const isPageCapture = drop.targetUrl !== null;
+    const root = useRef<HTMLDivElement>(null);
 
-    const fit = isPageCapture ? 'h-auto w-full max-w-6xl self-start cursor-zoom-in' : 'max-h-full max-w-full cursor-zoom-in';
-    const actualSize = isPageCapture ? 'h-auto w-[1440px] max-w-none shrink-0 self-start cursor-zoom-out' : 'max-w-none shrink-0 cursor-zoom-out';
-
-    function toggleOnKey(event: KeyboardEvent) {
-        if (event.key !== 'Enter' && event.key !== ' ') {
-            return;
-        }
-
-        event.preventDefault();
-        setZoomed((current) => !current);
-    }
+    useEffect(() => (root.current ? attachImageZoom(root.current) : undefined), [src]);
 
     return (
-        <img
-            src={src}
-            alt={drop.title}
-            role="button"
-            tabIndex={0}
-            aria-pressed={zoomed}
-            aria-label={zoomed ? 'Fit to window' : 'Zoom to actual size'}
-            title={zoomed ? 'Click to fit' : 'Click to zoom'}
-            onClick={() => setZoomed((current) => !current)}
-            onKeyDown={toggleOnKey}
-            className={`rounded-lg shadow-lg ${zoomed ? actualSize : fit}`}
-        />
+        <div ref={root} className="group/zoom relative h-full w-full">
+            <div data-zoom-viewport className="flex h-full w-full items-center-safe justify-center-safe overflow-auto pb-14">
+                <img
+                    data-zoom-image
+                    data-zoom-fit={drop.targetUrl ? 'width' : 'contain'}
+                    src={src}
+                    alt={drop.title}
+                    draggable={false}
+                    className={`shrink-0 cursor-zoom-in rounded-lg shadow-lg select-none group-data-[zoomed=true]/zoom:cursor-zoom-out ${drop.targetUrl ? 'w-full' : 'max-h-full max-w-full'}`}
+                />
+            </div>
+            <ZoomBar />
+        </div>
     );
 }

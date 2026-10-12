@@ -1,6 +1,7 @@
 import type { Drop, DropKind, DropPage, DropQuery, DropUpdate } from '../shared/types';
 import { automaticTags, normalizeTag, titleFor } from './kinds';
 import { hashPassword } from './password';
+import { thumbnailKey } from './thumbnails/thumbnailKey';
 import type { DropRow, Env } from './types';
 
 export type { DropRow, Env } from './types';
@@ -171,7 +172,7 @@ export class Drops {
         const placeholders = ids.map(() => '?').join(', ');
         const rows = await this.env.DB.prepare(`SELECT object_key FROM drops WHERE id IN (${placeholders})`).bind(...ids).all<{ object_key: string }>();
 
-        await this.env.BUCKET.delete(rows.results.map((row) => row.object_key));
+        await this.env.BUCKET.delete([...rows.results.map((row) => row.object_key), ...ids.map((id) => thumbnailKey(this.env, id))]);
         await this.env.DB.batch([
             this.env.DB.prepare(`DELETE FROM drop_tags WHERE drop_id IN (${placeholders})`).bind(...ids),
             this.env.DB.prepare(`DELETE FROM board_drops WHERE drop_id IN (${placeholders})`).bind(...ids),
@@ -217,6 +218,9 @@ export class Drops {
         if (key !== row.object_key) {
             await this.env.BUCKET.delete(row.object_key);
         }
+
+        // The editor sends a fresh thumbnail after saving; until then the old one would show the unedited image.
+        await this.env.BUCKET.delete(thumbnailKey(this.env, row.id));
 
         await this.env.DB.prepare('UPDATE drops SET object_key = ?, filename = ?, content_type = ?, size = ? WHERE id = ?')
             .bind(key, filename, contentType, object.size, row.id)

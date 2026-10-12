@@ -31,20 +31,27 @@ export function dropViewer(row: DropRow, src: string, text: string | null): stri
 }
 
 /**
- * Images fit the window and a click toggles actual size, through a hidden checkbox so public pages stay script free.
- * Web page captures are many screens tall, so they fit the width instead and zoom to the 1440px they were rendered at.
+ * An image with zoom controls, driven by /_assets/zoom.js (built from `src/public/zoom.ts`, shared with the dashboard).
+ * Without the script the image still fits the box. Web page captures fit the width and scroll instead of the height.
  */
 function zoomableImage(row: DropRow, url: string): string {
-    const fit = row.target_url ? 'h-auto w-full' : 'max-h-[calc(100vh-10rem)] max-w-full';
-    const actualSize = row.target_url
-        ? 'group-has-checked:w-[1440px] group-has-checked:max-w-none'
-        : 'group-has-checked:max-h-none group-has-checked:max-w-none';
-    const protect = row.allow_download ? '' : ' oncontextmenu="return false" draggable="false"';
+    const fit = row.target_url ? 'w-full' : 'max-h-full max-w-full';
+    const protect = row.allow_download ? '' : ' oncontextmenu="return false"';
+    const button = 'join-item btn btn-ghost btn-sm';
 
-    return `<label class="group block max-w-full cursor-zoom-in overflow-auto has-checked:cursor-zoom-out" title="Click to zoom">
-    <input type="checkbox" class="sr-only" aria-label="Zoom to actual size">
-    <img class="${fit} ${actualSize} mx-auto rounded-box bg-base-100 shadow-xl" src="${url}" alt="${escape(row.title)}"${protect}>
-</label>`;
+    return `<div data-image-zoom class="group relative w-full">
+    <div data-zoom-viewport class="flex h-[calc(100vh-10rem)] w-full items-center-safe justify-center-safe overflow-auto pb-14">
+        <img data-zoom-image data-zoom-fit="${row.target_url ? 'width' : 'contain'}" draggable="false" class="${fit} shrink-0 cursor-zoom-in select-none rounded-box bg-base-100 shadow-xl group-data-[zoomed=true]:cursor-zoom-out" src="${url}" alt="${escape(row.title)}"${protect}>
+    </div>
+    <div class="join absolute bottom-3 left-1/2 -translate-x-1/2 rounded-field bg-base-100/90 shadow-lg backdrop-blur">
+        <button type="button" data-zoom="out" class="${button}" aria-label="Zoom out" title="Zoom out (-)">&minus;</button>
+        <span data-zoom-label aria-live="polite" class="join-item flex min-w-24 items-center justify-center px-2 text-xs tabular-nums">Fit</span>
+        <button type="button" data-zoom="in" class="${button}" aria-label="Zoom in" title="Zoom in (+)">+</button>
+        <button type="button" data-zoom="fit" class="${button}" title="Fit (0)">Fit</button>
+        <button type="button" data-zoom="actual" class="${button}" title="Actual size (1)">100%</button>
+    </div>
+</div>
+<script src="/_assets/zoom.js" defer></script>`;
 }
 
 function fileCard(row: DropRow, url: string): string {

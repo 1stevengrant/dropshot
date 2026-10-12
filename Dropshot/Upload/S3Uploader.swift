@@ -148,6 +148,26 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         return URL(string: "\(base)/\(encodedKey)")!
     }
 
+    /// Library thumbnails sit at `<prefix>/_thumbs/<id>`; the Worker's bucket sync ignores keys starting with `_`.
+    func uploadThumbnail(_ data: Data, contentType: String, dropId: String) async throws {
+        let objectKey = Self.objectKey(prefix: configuration.keyPrefix, shortId: "_thumbs", filename: dropId)
+        let encodedKey = objectKey.split(separator: "/").map { S3Signer.encodePathSegment(String($0)) }.joined(separator: "/")
+        let signer = S3Signer(accessKeyId: configuration.accessKeyId, secretAccessKey: configuration.secretAccessKey, region: configuration.region)
+
+        var request = URLRequest(url: objectURL(encodedKey: encodedKey))
+        request.httpMethod = "PUT"
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+
+        signer.sign(&request, payloadHash: S3Signer.sha256Hex(data))
+
+        let (body, response) = try await URLSession.shared.upload(for: request, from: data)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+        guard (200..<300).contains(status) else {
+            throw UploadError.server(status: status, body: String(decoding: body, as: UTF8.self))
+        }
+    }
+
     /// S3 metadata travels as headers, which must be ASCII, so values are percent-encoded.
     static func metadataValue(_ value: String) -> String {
         value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "%"))) ?? ""

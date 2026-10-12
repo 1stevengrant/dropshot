@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "dev:app": "vite",
-    "build": "vite build && tailwindcss -i src/public/public.css -o dist/_assets/public.css --minify && cp public/* dist/",
+    "build": "vite build && tailwindcss -i src/public/public.css -o dist/_assets/public.css --minify && esbuild src/public/zoom.ts --bundle --minify --format=iife --target=es2020 --outfile=dist/_assets/zoom.js && cp public/* dist/",
     "typecheck": "tsc",
     "deploy": "npm run build && wrangler deploy",
     "migrate": "wrangler d1 migrations apply dropshot --remote"
@@ -23,6 +23,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "daisyui": "^5.7.47",
+    "esbuild": "^0.28.2",
     "lucide-react": "^1.55.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

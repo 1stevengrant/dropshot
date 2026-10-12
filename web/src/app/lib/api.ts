@@ -57,8 +57,13 @@ export const api = {
             body: file,
             headers: { 'X-Filename': encodeURIComponent(filename), 'Content-Type': file.type || 'application/octet-stream' },
         }),
+    putThumbnail: (id: string, thumbnail: Blob) =>
+        request<void>(`/drops/${id}/thumbnail`, { method: 'PUT', body: thumbnail, headers: { 'Content-Type': thumbnail.type } }),
     activity: (id: string) => request<Activity[]>(`/drops/${id}/activity`),
 };
 
 /** Owner preview URL: works for private and password-protected drops too. */
 export const previewUrl = (drop: Pick<Drop, 'id'>) => `/api/drops/${drop.id}/file`;
+
+/** The size changes when the file is replaced, so it doubles as a cache buster. */
+export const thumbnailUrl = (drop: Pick<Drop, 'id' | 'size'>) => `/api/drops/${drop.id}/thumbnail?v=${drop.size}`;

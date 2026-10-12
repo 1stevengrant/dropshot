@@ -173,6 +173,11 @@ final class UploadCoordinator {
             store.add(drop)
             complete(drop)
 
+            if kind == .image, let thumbnail = Thumbnailer.thumbnail(ofImageAt: prepared) {
+                // Optional: without it the dashboard card shows an icon (or the original, when that's small).
+                try? await uploader.uploadThumbnail(thumbnail.data, contentType: thumbnail.contentType, dropId: shortId)
+            }
+
             if discardLocal {
                 try? FileManager.default.removeItem(at: prepared)
             }

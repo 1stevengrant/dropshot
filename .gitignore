@@ -7,3 +7,6 @@ DerivedData/
 # REA working files contain decompiled Droplr output; only the behavioural spec is kept.
 re/*
 !re/SPEC.md
+scripts/backfill-thumbnails/.work/
+scripts/backfill-thumbnails/.done
+scripts/backfill-thumbnails/.failed
