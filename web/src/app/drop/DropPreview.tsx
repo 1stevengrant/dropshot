@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Download, Link2 } from 'lucide-react';
 import type { Drop } from '../../shared/types';
-import { previewUrl } from '../lib/api';
+import { cachedFileUrl } from '../lib/api';
 import { CodeBlock } from '../components/CodeBlock';
 import { ImagePreview } from './ImagePreview';
 import { formatBytes } from '../lib/format';
 
 export function DropPreview({ drop, version }: { drop: Drop; version: number }) {
-    const src = version ? `${previewUrl(drop)}?v=${version}` : previewUrl(drop);
+    const src = version ? `${cachedFileUrl(drop)}&edit=${version}` : cachedFileUrl(drop);
     const text = useQuery({ queryKey: ['text', drop.id], queryFn: async () => (await fetch(src)).text(), enabled: drop.kind === 'text' || drop.kind === 'code' });
 
     switch (drop.kind) {

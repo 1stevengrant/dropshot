@@ -23,7 +23,17 @@ dashboard.get('/app/*', async (c) => {
     const url = new URL(c.req.url);
 
     if (url.pathname.startsWith('/app/assets/')) {
-        return c.env.ASSETS.fetch(c.req.raw);
+        const response = await c.env.ASSETS.fetch(c.req.raw);
+
+        if (!response.ok) {
+            return response;
+        }
+
+        // Vite puts a content hash in every asset name, so a given URL never changes.
+        const headers = new Headers(response.headers);
+        headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+        return new Response(response.body, { status: response.status, headers });
     }
 
     const legacyDrop = url.pathname.match(/^\/app\/d\/([A-Za-z0-9_-]+)$/);

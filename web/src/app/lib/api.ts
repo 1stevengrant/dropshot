@@ -65,5 +65,8 @@ export const api = {
 /** Owner preview URL: works for private and password-protected drops too. */
 export const previewUrl = (drop: Pick<Drop, 'id'>) => `/api/drops/${drop.id}/file`;
 
+/** For showing a file: versioned by size so the browser can keep it for good, and a replaced file gets a new URL. */
+export const cachedFileUrl = (drop: Pick<Drop, 'id' | 'size'>) => `/api/drops/${drop.id}/file?v=${drop.size}`;
+
 /** The size changes when the file is replaced, so it doubles as a cache buster. */
 export const thumbnailUrl = (drop: Pick<Drop, 'id' | 'size'>) => `/api/drops/${drop.id}/thumbnail?v=${drop.size}`;

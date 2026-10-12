@@ -1,5 +1,5 @@
 import type { Drop } from '../../shared/types';
-import { previewUrl } from './api';
+import { cachedFileUrl } from './api';
 
 /** Responsive iframe code; images and videos keep their real aspect ratio. */
 export async function iframeCode(drop: Drop): Promise<string> {
@@ -33,7 +33,7 @@ function aspectRatio(drop: Drop): Promise<number> {
         }
 
         element.onerror = () => resolve(fallback);
-        element.src = previewUrl(drop);
+        element.src = cachedFileUrl(drop);
         setTimeout(() => resolve(fallback), 4000);
     });
 }

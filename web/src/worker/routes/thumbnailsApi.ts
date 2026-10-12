@@ -17,7 +17,8 @@ thumbnailsApi.get('/api/drops/:id/thumbnail', async (c) => {
         return new Response(thumbnail.body, {
             headers: {
                 'Content-Type': thumbnail.httpMetadata?.contentType ?? 'image/webp',
-                'Cache-Control': 'private, max-age=604800',
+                // The dashboard versions thumbnail URLs by the drop's size, so a replaced image gets a new URL.
+                'Cache-Control': c.req.query('v') ? 'private, max-age=31536000, immutable' : 'private, max-age=604800',
             },
         });
     }

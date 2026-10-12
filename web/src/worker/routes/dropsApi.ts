@@ -61,7 +61,18 @@ dropsApi.post('/api/drops/delete', async (c) => {
 dropsApi.get('/api/drops/:id/file', async (c) => {
     const row = await c.get('drops').find(c.req.param('id'));
 
-    return row ? serveObject(c, row, c.req.query('download') === '1') : c.notFound();
+    if (!row) {
+        return c.notFound();
+    }
+
+    const response = await serveObject(c, row, c.req.query('download') === '1');
+
+    // The dashboard versions display URLs by size (a replaced file gets a new URL), so the browser can keep them.
+    if (c.req.query('v') && response.ok) {
+        response.headers.set('Cache-Control', 'private, max-age=31536000, immutable');
+    }
+
+    return response;
 });
 
 dropsApi.get('/api/drops/:id/activity', async (c) => c.json(await c.get('visits').forDrop(c.req.param('id'))));

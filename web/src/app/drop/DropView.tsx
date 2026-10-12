@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router';
 import type { Drop, DropUpdate } from '../../shared/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast/useToast';
-import { api, previewUrl } from '../lib/api';
+import { api, cachedFileUrl } from '../lib/api';
 import { copy } from '../lib/format';
 import { libraryLocation } from '../lib/libraryLocation';
 import { uploadThumbnail } from '../lib/uploadThumbnail';
@@ -102,7 +102,7 @@ export function DropView({ drop }: { drop: Drop }) {
                 />
             )}
 
-            {marking && <MarkupEditor src={`${previewUrl(drop)}?v=${version}`} title={drop.title} onCancel={() => setMarking(false)} onSave={saveMarkup} />}
+            {marking && <MarkupEditor src={`${cachedFileUrl(drop)}&edit=${version}`} title={drop.title} onCancel={() => setMarking(false)} onSave={saveMarkup} />}
         </div>
     );
 }

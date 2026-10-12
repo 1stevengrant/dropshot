@@ -1,7 +1,7 @@
 import { FileCode, FileText, File as FileIcon, Image, Link2, Music, FileType } from 'lucide-react';
 import { useState } from 'react';
 import type { Drop } from '../../shared/types';
-import { previewUrl, thumbnailUrl } from '../lib/api';
+import { cachedFileUrl, thumbnailUrl } from '../lib/api';
 
 export function Thumbnail({ drop, className = '' }: { drop: Drop; className?: string }) {
     const [missing, setMissing] = useState(false);
@@ -13,7 +13,7 @@ export function Thumbnail({ drop, className = '' }: { drop: Drop; className?: st
 
     if (drop.kind === 'video') {
         // A fragment start time makes the browser paint a frame instead of a black box.
-        return <video src={`${previewUrl(drop)}#t=0.5`} preload="metadata" muted playsInline className={`h-full w-full object-cover object-top ${className}`} />;
+        return <video src={`${cachedFileUrl(drop)}#t=0.5`} preload="metadata" muted playsInline className={`h-full w-full object-cover object-top ${className}`} />;
     }
 
     const Icon = { image: Image, code: FileCode, text: FileText, link: Link2, audio: Music, pdf: FileType, file: FileIcon }[drop.kind] ?? FileIcon;
