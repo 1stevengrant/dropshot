@@ -15,14 +15,17 @@ nonisolated final class S3MultipartUpload: Sendable {
     private let signer: S3Signer
     private let contentType: String
     private let contentDisposition: String
+    /// `x-amz-meta-*` headers, already encoded; S3 only takes object metadata when the upload is created.
+    private let metadataHeaders: [String: String]
     private let progressHandler: @Sendable (Double) -> Void
     private let sentPerPart = Mutex<[Int: Int64]>([:])
 
-    init(objectURL: URL, signer: S3Signer, contentType: String, contentDisposition: String, progress: @escaping @Sendable (Double) -> Void) {
+    init(objectURL: URL, signer: S3Signer, contentType: String, contentDisposition: String, metadataHeaders: [String: String] = [:], progress: @escaping @Sendable (Double) -> Void) {
         self.objectURL = objectURL
         self.signer = signer
         self.contentType = contentType
         self.contentDisposition = contentDisposition
+        self.metadataHeaders = metadataHeaders
         self.progressHandler = progress
     }
 
@@ -42,10 +45,8 @@ nonisolated final class S3MultipartUpload: Sendable {
     // MARK: Steps
 
     private func create() async throws -> String {
-        let (data, _) = try await send(method: "POST", query: "uploads", body: Data(), headers: [
-            "Content-Type": contentType,
-            "Content-Disposition": contentDisposition,
-        ])
+        let headers = metadataHeaders.merging(["Content-Type": contentType, "Content-Disposition": contentDisposition]) { _, fixed in fixed }
+        let (data, _) = try await send(method: "POST", query: "uploads", body: Data(), headers: headers)
 
         guard let uploadId = Self.element("UploadId", in: data) else {
             throw UploadError.server(status: 200, body: "The storage didn't return an upload ID.")

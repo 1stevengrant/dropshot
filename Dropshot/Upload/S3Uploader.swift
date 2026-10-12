@@ -86,6 +86,7 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
 
         let signer = S3Signer(accessKeyId: configuration.accessKeyId, secretAccessKey: configuration.secretAccessKey, region: configuration.region)
         let size = Int64((try fileURL.resourceValues(forKeys: [.fileSizeKey])).fileSize ?? 0)
+        let metadataHeaders = Self.metadataHeaders(metadata)
 
         if size > Self.multipartThreshold {
             try await S3MultipartUpload(
@@ -93,6 +94,7 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
                 signer: signer,
                 contentType: Self.contentType(for: filename),
                 contentDisposition: Self.contentDisposition(for: filename),
+                metadataHeaders: metadataHeaders,
                 progress: progressHandler
             ).upload(fileAt: fileURL, size: size)
 
@@ -104,8 +106,8 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         request.setValue(Self.contentType(for: filename), forHTTPHeaderField: "Content-Type")
         request.setValue(Self.contentDisposition(for: filename), forHTTPHeaderField: "Content-Disposition")
 
-        for (name, value) in metadata {
-            request.setValue(Self.metadataValue(value), forHTTPHeaderField: "x-amz-meta-\(name)")
+        for (name, value) in metadataHeaders {
+            request.setValue(value, forHTTPHeaderField: name)
         }
 
         signer.sign(&request, payloadHash: try S3Signer.sha256Hex(fileAt: fileURL))
@@ -166,6 +168,10 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         guard (200..<300).contains(status) else {
             throw UploadError.server(status: status, body: String(decoding: body, as: UTF8.self))
         }
+    }
+
+    static func metadataHeaders(_ metadata: [String: String]) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: metadata.map { ("x-amz-meta-\($0.key)", metadataValue($0.value)) })
     }
 
     /// S3 metadata travels as headers, which must be ASCII, so values are percent-encoded.

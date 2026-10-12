@@ -3,6 +3,7 @@ import { automaticTags, normalizeTag, titleFor } from './kinds';
 import { hashPassword } from './password';
 import { thumbnailKey } from './thumbnails/thumbnailKey';
 import type { DropRow, Env } from './types';
+import type { UploadSettings } from './uploads/uploadSettings';
 
 export type { DropRow, Env } from './types';
 
@@ -144,6 +145,33 @@ export class Drops {
         if (statements.length) {
             await this.env.DB.batch(statements);
         }
+    }
+
+    /** Settings the Mac app sent with an upload. The password arrives already hashed, so unlike `update()` it is stored as given. */
+    async applyUploadSettings(id: string, settings: UploadSettings): Promise<void> {
+        const sets: string[] = [];
+        const bindings: unknown[] = [];
+
+        if (settings.privacy !== undefined) {
+            sets.push('privacy = ?', 'password_hash = ?');
+            bindings.push(settings.privacy, settings.passwordHash ?? null);
+        }
+
+        if (settings.expiresAt !== undefined) {
+            sets.push('expires_at = ?');
+            bindings.push(settings.expiresAt);
+        }
+
+        if (settings.allowDownload !== undefined) {
+            sets.push('allow_download = ?');
+            bindings.push(settings.allowDownload ? 1 : 0);
+        }
+
+        if (!sets.length) {
+            return;
+        }
+
+        await this.env.DB.prepare(`UPDATE drops SET ${sets.join(', ')} WHERE id = ?`).bind(...bindings, id).run();
     }
 
     /** Moves drops to the trash: their links stop working at once, but files and metadata stay for 30 days. */
