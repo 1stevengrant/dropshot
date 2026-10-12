@@ -27,7 +27,7 @@ struct AnnotationCanvas: View {
     private var drawingGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
-                if document.tool == .text || document.tool == .step {
+                if document.tool == .text || document.tool == .step || document.tool == .emoji {
                     return
                 }
 
@@ -55,6 +55,8 @@ struct AnnotationCanvas: View {
                     placeText(at: value.location)
                 case .step:
                     placeStep(at: value.location)
+                case .emoji:
+                    document.placeEmoji(at: value.location)
                 default:
                     commitDraft()
                 }
@@ -163,6 +165,8 @@ struct AnnotationCanvas: View {
             var shadowed = context
             shadowed.addFilter(.shadow(color: .black.opacity(0.4), radius: 2, y: 1))
             shadowed.draw(text, at: CGPoint(x: annotation.start.x + 2, y: annotation.start.y), anchor: .leading)
+        case .emoji:
+            context.draw(Text(annotation.emoji ?? "👍").font(.system(size: annotation.fontSize * 2)), at: annotation.start)
         case .step:
             let diameter = max(annotation.fontSize * 1.3, 24)
             let circle = CGRect(x: annotation.start.x - diameter / 2, y: annotation.start.y - diameter / 2, width: diameter, height: diameter)
