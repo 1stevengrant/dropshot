@@ -6,6 +6,9 @@ import type { DropRow, Env } from './types';
 
 export type { DropRow, Env } from './types';
 
+/** A tag or board row fetched alongside drops: `drop_id` plus `tag`, or `id` and `name`. */
+type HydrationRow = { drop_id: string; tag?: string; id?: number; name?: string };
+
 /** Drop records: listing, lookup, updates, deletion and file replacement. */
 export class Drops {
     constructor(private readonly env: Env, private readonly origin: string) {}
@@ -58,12 +61,18 @@ export class Drops {
         const page = Math.max(1, Math.floor(query.page ?? 1));
         const whereSql = where.join(' AND ');
 
-        const [rows, count] = await this.env.DB.batch<DropRow & { total?: number }>([
-            this.env.DB.prepare(`SELECT d.* FROM drops d WHERE ${whereSql} ORDER BY ${column} ${direction}, d.id LIMIT ? OFFSET ?`).bind(...bindings, perPage, (page - 1) * perPage),
+        const pageSql = `SELECT d.id FROM drops d WHERE ${whereSql} ORDER BY ${column} ${direction}, d.id LIMIT ? OFFSET ?`;
+        const pageBindings = [...bindings, perPage, (page - 1) * perPage];
+
+        // One round trip: the page, its total, and the page's tags and boards (selected by the same page query).
+        const [rows, count, tags, boards] = await this.env.DB.batch<DropRow & { total?: number } & HydrationRow>([
+            this.env.DB.prepare(`SELECT d.* FROM drops d WHERE ${whereSql} ORDER BY ${column} ${direction}, d.id LIMIT ? OFFSET ?`).bind(...pageBindings),
             this.env.DB.prepare(`SELECT COUNT(*) AS total FROM drops d WHERE ${whereSql}`).bind(...bindings),
+            this.tagsQuery(`IN (${pageSql})`, pageBindings),
+            this.boardsQuery(`IN (${pageSql})`, pageBindings),
         ]);
 
-        return { drops: await this.hydrate(rows.results), total: count.results[0]?.total ?? 0, page, perPage };
+        return { drops: this.hydrate(rows.results, tags.results, boards.results), total: count.results[0]?.total ?? 0, page, perPage };
     }
 
     async find(id: string): Promise<DropRow | null> {
@@ -71,9 +80,13 @@ export class Drops {
     }
 
     async get(id: string): Promise<Drop | null> {
-        const row = await this.find(id);
+        const [rows, tags, boards] = await this.env.DB.batch<DropRow & HydrationRow>([
+            this.env.DB.prepare('SELECT * FROM drops WHERE id = ?').bind(id),
+            this.tagsQuery('= ?', [id]),
+            this.boardsQuery('= ?', [id]),
+        ]);
 
-        return row ? (await this.hydrate([row]))[0] : null;
+        return rows.results.length ? this.hydrate(rows.results, tags.results, boards.results)[0] : null;
     }
 
     async update(id: string, update: DropUpdate): Promise<void> {
@@ -236,19 +249,15 @@ export class Drops {
         return `${this.origin}/${row.id}+`;
     }
 
-    private async hydrate(rows: DropRow[]): Promise<Drop[]> {
-        if (!rows.length) {
-            return [];
-        }
+    private tagsQuery(dropIdCondition: string, bindings: unknown[]): D1PreparedStatement {
+        return this.env.DB.prepare(`SELECT drop_id, tag FROM drop_tags WHERE drop_id ${dropIdCondition} ORDER BY tag`).bind(...bindings);
+    }
 
-        const ids = rows.map((row) => row.id);
-        const placeholders = ids.map(() => '?').join(', ');
+    private boardsQuery(dropIdCondition: string, bindings: unknown[]): D1PreparedStatement {
+        return this.env.DB.prepare(`SELECT bd.drop_id, b.id, b.name FROM board_drops bd JOIN boards b ON b.id = bd.board_id WHERE bd.drop_id ${dropIdCondition}`).bind(...bindings);
+    }
 
-        const [tagRows, boardRows] = await this.env.DB.batch<{ drop_id: string; tag?: string; id?: number; name?: string }>([
-            this.env.DB.prepare(`SELECT drop_id, tag FROM drop_tags WHERE drop_id IN (${placeholders}) ORDER BY tag`).bind(...ids),
-            this.env.DB.prepare(`SELECT bd.drop_id, b.id, b.name FROM board_drops bd JOIN boards b ON b.id = bd.board_id WHERE bd.drop_id IN (${placeholders})`).bind(...ids),
-        ]);
-
+    private hydrate(rows: DropRow[], tagRows: HydrationRow[], boardRows: HydrationRow[]): Drop[] {
         return rows.map((row) => ({
             id: row.id,
             title: row.title,
@@ -262,8 +271,8 @@ export class Drops {
             allowDownload: row.allow_download === 1,
             views: row.views,
             targetUrl: row.target_url,
-            tags: tagRows.results.filter((tag) => tag.drop_id === row.id).map((tag) => tag.tag!),
-            boards: boardRows.results.filter((board) => board.drop_id === row.id).map((board) => ({ id: board.id!, name: board.name! })),
+            tags: tagRows.filter((tag) => tag.drop_id === row.id).map((tag) => tag.tag!),
+            boards: boardRows.filter((board) => board.drop_id === row.id).map((board) => ({ id: board.id!, name: board.name! })),
             pageUrl: this.pageUrl(row.id),
             directUrl: this.directUrl(row),
             cta: row.cta_label && row.cta_url ? { label: row.cta_label, url: row.cta_url } : null,

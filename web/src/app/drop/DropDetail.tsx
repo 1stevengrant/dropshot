@@ -1,11 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router';
 import { api } from '../lib/api';
+import { cachedDrop } from '../lib/cachedDrop';
 import { DropView } from './DropView';
 
 export function DropDetail() {
     const { id = '' } = useParams();
-    const drop = useQuery({ queryKey: ['drop', id], queryFn: () => api.drop(id) });
+    const queryClient = useQueryClient();
+    const drop = useQuery({ queryKey: ['drop', id], queryFn: () => api.drop(id), placeholderData: () => cachedDrop(queryClient, id) });
 
     if (drop.isError) {
         return (
