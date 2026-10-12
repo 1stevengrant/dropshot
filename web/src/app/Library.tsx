@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ArrowUpDown, Check, CloudUpload, Copy, ExternalLink, FileText, Film, Image, LayoutGrid, Link2, List, Lock, Plus,
+    ArrowUpDown, CloudUpload, Copy, ExternalLink, FileText, Film, Image, LayoutGrid, Link2, List, Lock, Plus,
     Search, Tag, Timer, Trash2, Upload, X, Files, FolderPlus, KeyRound,
 } from 'lucide-react';
 import { type DragEvent, type ReactNode, useDeferredValue, useRef, useState } from 'react';
@@ -192,7 +192,7 @@ export function Library() {
                     <button
                         type="button"
                         onClick={() => fileInput.current?.click()}
-                        className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                        className="btn btn-primary btn-sm"
                     >
                         <Upload size={16} /> Upload file
                     </button>
@@ -214,7 +214,7 @@ export function Library() {
                                         align="right"
                                         label="Add to board"
                                         trigger={({ toggle }) => (
-                                            <button type="button" onClick={toggle} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-canvas">
+                                            <button type="button" onClick={toggle} className="btn btn-sm">
                                                 <FolderPlus size={15} /> Add to board
                                             </button>
                                         )}
@@ -229,7 +229,7 @@ export function Library() {
                                 <button
                                     type="button"
                                     onClick={() => confirm(`Delete ${selected.size} drop${selected.size === 1 ? '' : 's'}? This removes the files for good.`) && remove.mutate([...selected])}
-                                    className="flex items-center gap-2 rounded-lg bg-danger px-3 py-1.5 text-sm font-medium text-white"
+                                    className="btn btn-error btn-sm"
                                 >
                                     <Trash2 size={15} /> Delete
                                 </button>
@@ -241,19 +241,19 @@ export function Library() {
                                 type="checkbox"
                                 checked={allSelected}
                                 onChange={() => setSelected(allSelected ? new Set() : new Set(items.map((drop) => drop.id)))}
-                                className="size-4 accent-accent"
+                                className="checkbox checkbox-sm checkbox-primary"
                             />
                             Select all
                         </label>
 
-                        <div className="flex rounded-lg border border-line" role="group" aria-label="Layout">
+                        <div className="join" role="group" aria-label="Layout">
                             {(['grid', 'list'] as const).map((mode) => (
                                 <button
                                     key={mode}
                                     type="button"
                                     aria-pressed={view === mode}
                                     onClick={() => { setView(mode); localStorage.setItem('view', mode); }}
-                                    className={`px-2.5 py-1.5 ${view === mode ? 'bg-accent-soft text-accent' : 'text-muted'}`}
+                                    className={`join-item btn btn-sm ${view === mode ? 'btn-active btn-primary' : ''}`}
                                     title={mode === 'grid' ? 'Grid' : 'List'}
                                 >
                                     {mode === 'grid' ? <LayoutGrid size={16} /> : <List size={16} />}
@@ -265,7 +265,7 @@ export function Library() {
                             align="right"
                             label="Sort"
                             trigger={({ toggle }) => (
-                                <button type="button" onClick={toggle} className="flex items-center gap-2 text-sm font-medium">
+                                <button type="button" onClick={toggle} className="btn btn-ghost btn-sm">
                                     <ArrowUpDown size={15} /> {currentSort.label}
                                 </button>
                             )}
@@ -290,7 +290,7 @@ export function Library() {
                     </div>
 
                     {uploading > 0 && (
-                        <div className="mb-4 rounded-lg bg-accent-soft px-4 py-2 text-sm text-accent">Uploading {uploading} file{uploading === 1 ? '' : 's'}…</div>
+                        <div role="status" className="alert alert-info alert-soft mb-4 py-2 text-sm"><span className="loading loading-spinner loading-sm" /> Uploading {uploading} file{uploading === 1 ? '' : 's'}…</div>
                     )}
 
                     {drops.isFetching && (
@@ -299,7 +299,7 @@ export function Library() {
                         </div>
                     )}
 
-                    {drops.isError && <div className="rounded-lg bg-danger/10 px-4 py-3 text-danger">{drops.error.message}</div>}
+                    {drops.isError && <div role="alert" className="alert alert-error alert-soft">{drops.error.message}</div>}
 
                     {view === 'grid' ? (
                         <div className={`grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 transition-opacity ${drops.isPlaceholderData ? 'opacity-60' : ''}`}>
@@ -344,12 +344,12 @@ export function Library() {
 
 function SkeletonCard() {
     return (
-        <div className="flex animate-pulse flex-col overflow-hidden rounded-xl border border-line bg-panel" aria-hidden="true">
-            <div className="aspect-[4/3] bg-canvas" />
+        <div className="flex flex-col overflow-hidden rounded-box border border-base-300 bg-base-100" aria-hidden="true">
+            <div className="skeleton aspect-[4/3] rounded-none" />
             <div className="flex flex-col gap-2 p-4">
-                <div className="h-4 w-3/4 rounded bg-canvas" />
-                <div className="h-3 w-1/2 rounded bg-canvas" />
-                <div className="mt-3 h-3 w-1/3 rounded bg-canvas" />
+                <div className="skeleton h-4 w-3/4" />
+                <div className="skeleton h-3 w-1/2" />
+                <div className="skeleton mt-3 h-3 w-1/3" />
             </div>
         </div>
     );
@@ -357,25 +357,26 @@ function SkeletonCard() {
 
 function Pagination({ page, pageCount, onChange }: { page: number; pageCount: number; onChange: (page: number) => void }) {
     const pages = [...new Set([1, page - 2, page - 1, page, page + 1, page + 2, pageCount])].filter((value) => value >= 1 && value <= pageCount).sort((a, b) => a - b);
-    const button = 'min-w-9 rounded-lg border border-line px-3 py-1.5 text-sm disabled:opacity-40';
 
     return (
-        <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Pages">
-            <button type="button" className={button} disabled={page <= 1} onClick={() => onChange(page - 1)}>Previous</button>
-            {pages.map((value, index) => (
-                <span key={value} className="flex items-center gap-2">
-                    {index > 0 && value - pages[index - 1] > 1 && <span className="text-muted">…</span>}
-                    <button
-                        type="button"
-                        aria-current={value === page ? 'page' : undefined}
-                        className={`${button} ${value === page ? 'border-accent bg-accent text-white' : 'hover:bg-panel'}`}
-                        onClick={() => onChange(value)}
-                    >
-                        {value}
-                    </button>
-                </span>
-            ))}
-            <button type="button" className={button} disabled={page >= pageCount} onClick={() => onChange(page + 1)}>Next</button>
+        <nav className="mt-8 flex justify-center" aria-label="Pages">
+            <div className="join">
+                <button type="button" className="join-item btn btn-sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>Previous</button>
+                {pages.map((value, index) => (
+                    <span key={value} className="contents">
+                        {index > 0 && value - pages[index - 1] > 1 && <button type="button" className="join-item btn btn-sm btn-disabled" tabIndex={-1}>…</button>}
+                        <button
+                            type="button"
+                            aria-current={value === page ? 'page' : undefined}
+                            className={`join-item btn btn-sm ${value === page ? 'btn-primary' : ''}`}
+                            onClick={() => onChange(value)}
+                        >
+                            {value}
+                        </button>
+                    </span>
+                ))}
+                <button type="button" className="join-item btn btn-sm" disabled={page >= pageCount} onClick={() => onChange(page + 1)}>Next</button>
+            </div>
         </nav>
     );
 }
@@ -394,15 +395,14 @@ function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: boolean;
     const toast = useToast();
 
     return (
-        <article className={`group relative flex flex-col overflow-hidden rounded-xl border bg-panel shadow-sm transition hover:shadow-md ${selected ? 'border-accent ring-2 ring-accent/40' : 'border-line'}`}>
-            <button
-                type="button"
-                onClick={onToggle}
-                aria-label={selected ? 'Deselect' : 'Select'}
-                className={`absolute top-2 left-2 z-10 flex size-6 items-center justify-center rounded-md border bg-panel/90 ${selected ? 'border-accent bg-accent text-white' : 'border-line opacity-0 group-hover:opacity-100'}`}
-            >
-                {selected && <Check size={14} />}
-            </button>
+        <article className={`card group relative overflow-hidden border bg-base-100 shadow-sm transition hover:shadow-md ${selected ? 'border-primary ring-2 ring-primary/40' : 'border-base-300'}`}>
+            <input
+                type="checkbox"
+                checked={selected}
+                onChange={onToggle}
+                aria-label={`Select ${drop.title}`}
+                className={`checkbox checkbox-sm checkbox-primary absolute top-2 left-2 z-10 bg-base-100 ${selected ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+            />
 
             <a href={`/${drop.id}`} className="relative block aspect-[4/3] overflow-hidden bg-canvas">
                 <Thumbnail drop={drop} />
@@ -427,11 +427,11 @@ function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: boolean;
                         type="button"
                         title="Copy link"
                         onClick={async () => { await copy(drop.pageUrl); toast('Link copied'); }}
-                        className="rounded p-1 text-accent hover:bg-accent-soft"
+                        className="btn btn-ghost btn-xs btn-square text-primary"
                     >
                         <Copy size={16} />
                     </button>
-                    <a href={drop.pageUrl} target="_blank" rel="noreferrer" title="Open drop page" className="rounded p-1 text-accent hover:bg-accent-soft">
+                    <a href={drop.pageUrl} target="_blank" rel="noreferrer" title="Open drop page" className="btn btn-ghost btn-xs btn-square text-primary">
                         <ExternalLink size={16} />
                     </a>
                 </div>
@@ -445,7 +445,7 @@ function DropTable({ drops, selected, onToggle }: { drops: Drop[]; selected: Set
 
     return (
         <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-            <table className="w-full text-sm">
+            <table className="table">
                 <thead className="border-b border-line text-left text-xs text-muted uppercase">
                     <tr>
                         <th className="w-10 px-4 py-3" />
@@ -458,9 +458,9 @@ function DropTable({ drops, selected, onToggle }: { drops: Drop[]; selected: Set
                 </thead>
                 <tbody>
                     {drops.map((drop) => (
-                        <tr key={drop.id} className="border-b border-line last:border-0 hover:bg-canvas">
+                        <tr key={drop.id} className="hover:bg-base-200">
                             <td className="px-4 py-2">
-                                <input type="checkbox" checked={selected.has(drop.id)} onChange={() => onToggle(drop.id)} className="size-4 accent-accent" aria-label={`Select ${drop.title}`} />
+                                <input type="checkbox" checked={selected.has(drop.id)} onChange={() => onToggle(drop.id)} className="checkbox checkbox-sm checkbox-primary" aria-label={`Select ${drop.title}`} />
                             </td>
                             <td className="px-2 py-2">
                                 <a href={`/${drop.id}`} className="flex items-center gap-3 hover:text-accent">
@@ -473,7 +473,7 @@ function DropTable({ drops, selected, onToggle }: { drops: Drop[]; selected: Set
                             <td className="px-2 py-2 text-muted">{drop.views}</td>
                             <td className="px-2 py-2 whitespace-nowrap text-muted">{formatDate(drop.createdAt)}</td>
                             <td className="px-4 py-2 text-right">
-                                <button type="button" title="Copy link" onClick={async () => { await copy(drop.pageUrl); toast('Link copied'); }} className="rounded p-1 text-accent hover:bg-accent-soft">
+                                <button type="button" title="Copy link" onClick={async () => { await copy(drop.pageUrl); toast('Link copied'); }} className="btn btn-ghost btn-xs btn-square text-primary">
                                     <Copy size={16} />
                                 </button>
                             </td>
@@ -541,7 +541,7 @@ function Sidebar({ query, filter, boards, tags, onBoardsChanged }: SidebarProps)
             <section>
                 <div className="mb-1 flex items-center justify-between px-2 text-xs font-semibold tracking-wide text-muted uppercase">
                     Boards
-                    <button type="button" onClick={() => setCreating(true)} title="Create a board" className="rounded p-1 hover:bg-canvas hover:text-ink">
+                    <button type="button" onClick={() => setCreating(true)} title="Create a board" className="btn btn-ghost btn-xs btn-square">
                         <Plus size={15} />
                     </button>
                 </div>
@@ -553,7 +553,7 @@ function Sidebar({ query, filter, boards, tags, onBoardsChanged }: SidebarProps)
                             onChange={(event) => setName(event.target.value)}
                             onBlur={createBoard}
                             placeholder="Board name"
-                            className="w-full rounded-md border border-line bg-canvas px-2 py-1.5 text-sm outline-none focus:border-accent"
+                            className="input input-sm w-full"
                         />
                     </form>
                 )}
@@ -562,7 +562,7 @@ function Sidebar({ query, filter, boards, tags, onBoardsChanged }: SidebarProps)
                         <SidebarItem active={query.board === board.id} onClick={() => filter({ board: String(board.id) })} icon={<Files size={16} />} count={board.count}>
                             {board.name}
                         </SidebarItem>
-                        <button type="button" onClick={() => deleteBoard(board.id, board.name)} title="Delete board" className="ml-1 rounded p-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger">
+                        <button type="button" onClick={() => deleteBoard(board.id, board.name)} title="Delete board" className="btn btn-ghost btn-xs btn-square ml-1 text-muted opacity-0 group-hover:opacity-100 hover:text-error">
                             <X size={14} />
                         </button>
                     </div>
@@ -587,7 +587,7 @@ function SidebarItem({ active, onClick, icon, count, children }: { active: boole
         <button
             type="button"
             onClick={onClick}
-            className={`flex w-full min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm ${active ? 'bg-accent-soft font-medium text-accent' : 'hover:bg-canvas'}`}
+            className={`btn btn-ghost btn-sm h-auto w-full min-w-0 justify-start gap-3 px-2 py-1.5 font-normal ${active ? 'btn-active bg-accent-soft font-medium text-primary' : ''}`}
         >
             <span className="shrink-0 text-muted">{icon}</span>
             <span className="flex-1 truncate">{children}</span>

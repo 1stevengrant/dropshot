@@ -44,28 +44,29 @@ export function Menu({ trigger, children, align = 'center', label }: MenuProps) 
         <div className="relative" ref={container}>
             {trigger({ open, toggle: () => setOpen((value) => !value) })}
             {open && (
-                <div role="menu" aria-label={label} className={`absolute z-30 mt-2 min-w-52 rounded-xl border border-line bg-panel py-2 shadow-xl ${position}`}>
+                <ul role="menu" aria-label={label} className={`menu absolute z-30 mt-2 min-w-56 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl ${position}`}>
                     {children(() => setOpen(false))}
-                </div>
+                </ul>
             )}
         </div>
     );
 }
 
+export function MenuDivider() {
+    return <li aria-hidden="true" className="pointer-events-none my-1 h-px bg-base-300" />;
+}
+
 export function MenuHeading({ children }: { children: ReactNode }) {
-    return <div className="mx-4 mb-1 border-b border-line pb-2 text-xs font-semibold tracking-wide text-muted uppercase">{children}</div>;
+    return <li className="menu-title text-xs tracking-wide uppercase">{children}</li>;
 }
 
 export function MenuItem({ onSelect, children, danger, checked }: { onSelect: () => void; children: ReactNode; danger?: boolean; checked?: boolean }) {
     return (
-        <button
-            type="button"
-            role="menuitem"
-            onClick={onSelect}
-            className={`flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-canvas ${danger ? 'text-danger' : ''}`}
-        >
-            {checked !== undefined && <span className="w-4 text-accent">{checked ? '✓' : ''}</span>}
-            {children}
-        </button>
+        <li>
+            <button type="button" role="menuitem" onClick={onSelect} className={danger ? 'text-error' : ''}>
+                {checked !== undefined && <span className="w-4 text-primary">{checked ? '✓' : ''}</span>}
+                {children}
+            </button>
+        </li>
     );
 }

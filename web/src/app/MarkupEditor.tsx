@@ -213,12 +213,12 @@ export function MarkupEditor({ src, title, onCancel, onSave }: MarkupEditorProps
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-canvas" role="dialog" aria-label={`Markup ${title}`}>
             <header className="flex flex-wrap items-center gap-3 border-b border-line bg-panel px-4 py-2.5">
-                <button type="button" onClick={onCancel} className="rounded-lg p-1.5 text-muted hover:bg-canvas" title="Close (Esc)">
+                <button type="button" onClick={onCancel} className="btn btn-ghost btn-sm btn-square" title="Close (Esc)">
                     <X size={20} />
                 </button>
                 <span className="mr-2 max-w-64 truncate font-medium">Markup: {title}</span>
 
-                <div className="flex rounded-lg border border-line" role="toolbar" aria-label="Tools">
+                <div className="join" role="toolbar" aria-label="Tools">
                     {tools.map((item) => (
                         <button
                             key={item.tool}
@@ -226,7 +226,7 @@ export function MarkupEditor({ src, title, onCancel, onSave }: MarkupEditorProps
                             title={`${item.label} (${item.key.toUpperCase()})`}
                             aria-pressed={tool === item.tool}
                             onClick={() => setTool(item.tool)}
-                            className={`px-2.5 py-1.5 ${tool === item.tool ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
+                            className={`join-item btn btn-sm ${tool === item.tool ? 'btn-active btn-primary' : ''}`}
                         >
                             {item.icon}
                         </button>
@@ -249,22 +249,24 @@ export function MarkupEditor({ src, title, onCancel, onSave }: MarkupEditorProps
                 </div>
 
                 <div className="flex gap-1">
-                    <button type="button" onClick={undoLast} disabled={!shapes.length} title="Undo (⌘Z)" className="rounded-lg p-1.5 text-muted hover:bg-canvas disabled:opacity-40"><Undo2 size={18} /></button>
-                    <button type="button" onClick={redoLast} disabled={!redo.length} title="Redo (⇧⌘Z)" className="rounded-lg p-1.5 text-muted hover:bg-canvas disabled:opacity-40"><Redo2 size={18} /></button>
+                    <button type="button" onClick={undoLast} disabled={!shapes.length} title="Undo (⌘Z)" className="btn btn-ghost btn-sm btn-square"><Undo2 size={18} /></button>
+                    <button type="button" onClick={redoLast} disabled={!redo.length} title="Redo (⇧⌘Z)" className="btn btn-ghost btn-sm btn-square"><Redo2 size={18} /></button>
                 </div>
 
                 <div className="ml-auto flex gap-2">
-                    <button type="button" onClick={() => save('replace')} disabled={!shapes.length || saving !== null} className="rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:bg-canvas">
-                        {saving === 'replace' ? 'Saving…' : 'Replace original'}
+                    <button type="button" onClick={() => save('replace')} disabled={!shapes.length || saving !== null} className="btn btn-sm">
+                        {saving === 'replace' && <span className="loading loading-spinner loading-xs" />}
+                        Replace original
                     </button>
-                    <button type="button" onClick={() => save('copy')} disabled={!shapes.length || saving !== null} className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-                        {saving === 'copy' ? 'Saving…' : 'Save as new drop'}
+                    <button type="button" onClick={() => save('copy')} disabled={!shapes.length || saving !== null} className="btn btn-primary btn-sm">
+                        {saving === 'copy' && <span className="loading loading-spinner loading-xs" />}
+                        Save as new drop
                     </button>
                 </div>
             </header>
 
             <main className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto p-6">
-                {!image && <p className="text-muted">Loading image…</p>}
+                {!image && <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading image" />}
                 {image && (
                     <canvas
                         ref={canvas}

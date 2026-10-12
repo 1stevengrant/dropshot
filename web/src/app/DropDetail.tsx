@@ -8,7 +8,7 @@ import type { Activity, Drop, DropUpdate, Privacy } from '../shared/types';
 import { api, previewUrl } from './api';
 import { copy, formatBytes, formatDate, formatExpiry } from './format';
 import { MarkupEditor } from './MarkupEditor';
-import { Menu, MenuHeading, MenuItem } from './Menu';
+import { Menu, MenuDivider, MenuHeading, MenuItem } from './Menu';
 import { useToast } from './Toasts';
 
 const hour = 3_600_000;
@@ -106,20 +106,20 @@ function DropView({ drop }: { drop: Drop }) {
     return (
         <div className="flex h-screen flex-col">
             <header className="flex items-center gap-4 border-b border-line bg-panel px-4 py-3">
-                <Link to="/" className="flex items-center gap-1 rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-ink" title="Back to my drops">
+                <Link to="/" className="btn btn-ghost btn-sm btn-square" title="Back to my drops">
                     <ChevronLeft size={20} />
                 </Link>
                 <Link to="/" className="text-xl font-bold tracking-tight text-accent">Dropshot</Link>
                 <h1 className="ml-4 min-w-0 flex-1 truncate border-l border-line pl-6 font-medium">{drop.title}</h1>
-                <a href={`${previewUrl(drop)}?download=1`} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-canvas">
+                <a href={`${previewUrl(drop)}?download=1`} className="btn btn-sm">
                     <Download size={16} /> <span className="hidden sm:inline">Download</span>
                 </a>
                 {drop.kind === 'image' && !drop.contentType.includes('gif') && (
-                    <button type="button" onClick={() => setMarking(true)} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-canvas">
+                    <button type="button" onClick={() => setMarking(true)} className="btn btn-sm">
                         <Pencil size={16} /> <span className="hidden sm:inline">Markup</span>
                     </button>
                 )}
-                <button type="button" onClick={confirmDelete} className="flex items-center gap-2 rounded-lg bg-danger px-3 py-1.5 text-sm font-medium text-white">
+                <button type="button" onClick={confirmDelete} className="btn btn-error btn-sm">
                     <Trash2 size={16} /> <span className="hidden sm:inline">Delete</span>
                 </button>
             </header>
@@ -164,7 +164,7 @@ function Preview({ drop, version }: { drop: Drop; version: number }) {
                 <div className="rounded-xl border border-line bg-panel p-10 text-center">
                     <p className="mb-1 text-lg font-medium">{drop.filename}</p>
                     <p className="mb-5 text-muted">{formatBytes(drop.size)}</p>
-                    <a href={`${src}?download=1`} className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 font-medium text-white">
+                    <a href={`${src}?download=1`} className="btn btn-primary">
                         <Download size={16} /> Download
                     </a>
                 </div>
@@ -234,7 +234,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
 
     return (
         <aside className="w-full shrink-0 overflow-y-auto border-t border-line bg-panel lg:w-96 lg:border-t-0 lg:border-l">
-            <div className="grid grid-cols-2 border-b border-line text-sm" role="tablist">
+            <div className="tabs tabs-border grid grid-cols-2 border-b border-base-300" role="tablist">
                 {(['activity', 'info'] as const).map((value) => (
                     <button
                         key={value}
@@ -242,7 +242,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                         role="tab"
                         aria-selected={tab === value}
                         onClick={() => setTab(value)}
-                        className={`border-b-2 py-3.5 ${tab === value ? 'border-accent font-medium text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+                        className={`tab h-12 ${tab === value ? 'tab-active' : ''}`}
                     >
                         {value === 'activity' ? 'Activities' : 'File info'}
                     </button>
@@ -258,7 +258,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                     onBlur={saveTitle}
                     onKeyDown={(event) => event.key === 'Enter' && (event.target as HTMLInputElement).blur()}
                     aria-label="Title"
-                    className="w-full truncate rounded-md bg-transparent px-2 py-1 text-center text-lg font-semibold outline-none hover:bg-canvas focus:bg-canvas"
+                    className="input input-ghost w-full truncate text-center text-lg font-semibold"
                 />
 
                 <div className="mt-4 flex justify-center gap-3">
@@ -283,7 +283,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                                         <span className="text-xs text-muted">Paste into a website, Notion or a blog</span>
                                     </span>
                                 </MenuItem>
-                                <div className="my-1 border-t border-line" />
+                                <MenuDivider />
                                 {embedFormats(drop).map((format) => (
                                     <MenuItem key={format.label} onSelect={async () => { await copy(format.value); toast(`${format.label} copied`); close(); }}>
                                         {format.label}
@@ -363,7 +363,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                                 <MenuItem onSelect={() => { window.location.href = `${previewUrl(drop)}?download=1`; close(); }}>
                                     <Download size={15} /> Download
                                 </MenuItem>
-                                <div className="my-1 border-t border-line" />
+                                <MenuDivider />
                                 <MenuItem danger onSelect={() => { close(); onDelete(); }}>
                                     <Trash2 size={15} /> Delete
                                 </MenuItem>
@@ -385,10 +385,10 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                             onChange={(event) => setPassword(event.target.value)}
                             placeholder="Set a password"
                             autoComplete="new-password"
-                            className="min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm outline-none focus:border-accent"
+                            className="input input-sm min-w-0 flex-1"
                         />
-                        <button type="submit" className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white">Save</button>
-                        <button type="button" onClick={() => setPassword(null)} className="rounded-lg px-2 text-muted"><X size={16} /></button>
+                        <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                        <button type="button" onClick={() => setPassword(null)} className="btn btn-ghost btn-sm btn-square"><X size={16} /></button>
                     </form>
                 )}
 
@@ -411,10 +411,10 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                             value={customExpiry}
                             min={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16)}
                             onChange={(event) => setCustomExpiry(event.target.value)}
-                            className="min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm outline-none focus:border-accent"
+                            className="input input-sm min-w-0 flex-1"
                         />
-                        <button type="submit" className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white">Set</button>
-                        <button type="button" onClick={() => setCustomExpiry(null)} className="rounded-lg px-2 text-muted"><X size={16} /></button>
+                        <button type="submit" className="btn btn-primary btn-sm">Set</button>
+                        <button type="button" onClick={() => setCustomExpiry(null)} className="btn btn-ghost btn-sm btn-square"><X size={16} /></button>
                     </form>
                 )}
             </section>
@@ -443,16 +443,16 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                         }}
                         className="flex flex-col gap-2"
                     >
-                        <input value={ctaDraft.label} onChange={(event) => setCtaDraft({ ...ctaDraft, label: event.target.value })} placeholder="Button label, e.g. Book a call" className="rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm outline-none focus:border-accent" />
-                        <input type="url" required value={ctaDraft.url} onChange={(event) => setCtaDraft({ ...ctaDraft, url: event.target.value })} placeholder="https://" className="rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm outline-none focus:border-accent" />
+                        <input value={ctaDraft.label} onChange={(event) => setCtaDraft({ ...ctaDraft, label: event.target.value })} placeholder="Button label, e.g. Book a call" className="input input-sm w-full" />
+                        <input type="url" required value={ctaDraft.url} onChange={(event) => setCtaDraft({ ...ctaDraft, url: event.target.value })} placeholder="https://" className="input input-sm w-full" />
                         <div className="flex justify-end gap-2">
-                            <button type="button" onClick={() => setCtaDraft(null)} className="rounded-lg px-3 py-1.5 text-sm text-muted">Cancel</button>
-                            <button type="submit" className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white">Save</button>
+                            <button type="button" onClick={() => setCtaDraft(null)} className="btn btn-ghost btn-sm">Cancel</button>
+                            <button type="submit" className="btn btn-primary btn-sm">Save</button>
                         </div>
                     </form>
                 ) : drop.cta ? (
                     <div className="flex items-center gap-3 text-sm">
-                        <span className="rounded-lg border border-line px-3 py-1.5 font-medium">{drop.cta.label}</span>
+                        <span className="badge badge-outline badge-lg">{drop.cta.label}</span>
                         <span className="min-w-0 flex-1 truncate text-muted">{drop.cta.url}</span>
                         <button type="button" onClick={() => setCtaDraft({ label: drop.cta!.label, url: drop.cta!.url })} className="text-accent hover:underline">Edit</button>
                         <button type="button" onClick={() => onChange({ cta: null })} title="Remove CTA" className="text-muted hover:text-danger"><X size={15} /></button>
@@ -478,7 +478,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                             trigger={({ toggle }) => (
                                 <button type="button" onClick={toggle} className="flex flex-wrap items-center gap-1.5 text-left">
                                     {drop.boards.length
-                                        ? drop.boards.map((board) => <span key={board.id} className="rounded-md bg-canvas px-2 py-0.5">{board.name}</span>)
+                                        ? drop.boards.map((board) => <span key={board.id} className="badge badge-ghost">{board.name}</span>)
                                         : <span className="flex items-center gap-1 text-muted"><FolderPlus size={14} /> Add drop to board</span>}
                                 </button>
                             )}
@@ -491,7 +491,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                                             {board.name}
                                         </MenuItem>
                                     ))}
-                                    {!boards.data?.length && <p className="px-4 py-2 text-sm text-muted">Create a board from the sidebar first.</p>}
+                                    {!boards.data?.length && <li className="px-3 py-2 text-sm text-muted">Create a board from the sidebar first.</li>}
                                 </>
                             )}
                         </Menu>
@@ -499,7 +499,7 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                     <dt className="pt-1 text-muted">Tags</dt>
                     <dd className="flex flex-wrap items-center gap-1.5">
                         {drop.tags.map((tag) => (
-                            <span key={tag} className="flex items-center gap-1 rounded-md bg-canvas px-2 py-0.5">
+                            <span key={tag} className="badge badge-ghost gap-1">
                                 #{tag}
                                 <button type="button" title={`Remove ${tag}`} onClick={() => onChange({ tags: drop.tags.filter((item) => item !== tag) })} className="text-muted hover:text-danger">
                                     <X size={12} />
@@ -640,23 +640,13 @@ function CircleButton({ title, onClick, active, children }: { title: string; onC
             title={title}
             aria-label={title}
             onClick={onClick}
-            className={`flex size-11 items-center justify-center rounded-full border ${active ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:bg-canvas'}`}
+            className={`btn btn-circle ${active ? 'btn-primary btn-soft' : 'btn-outline border-base-300'}`}
         >
             {children}
         </button>
     );
 }
 
-function Switch({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
-    return (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={checked}
-            onClick={() => onChange(!checked)}
-            className={`relative h-6 w-11 rounded-full transition ${checked ? 'bg-green-500' : 'bg-line'}`}
-        >
-            <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition ${checked ? 'left-5.5' : 'left-0.5'}`} />
-        </button>
-    );
+function Switch({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label?: string }) {
+    return <input type="checkbox" className="toggle toggle-success" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} />;
 }
