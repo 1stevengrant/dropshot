@@ -14,6 +14,14 @@ export function FileDetails({ drop, onChange }: { drop: Drop; onChange: (changes
                 <dd className="truncate">{drop.contentType}</dd>
                 <dt className="text-muted">Created</dt>
                 <dd>{formatDate(drop.createdAt)}</dd>
+                {drop.kind !== 'link' && drop.targetUrl && (
+                    <>
+                        <dt className="text-muted">Captured from</dt>
+                        <dd className="truncate">
+                            <a href={drop.targetUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">{drop.targetUrl.replace(/^https?:\/\//, '')}</a>
+                        </dd>
+                    </>
+                )}
                 <dt className="text-muted">Boards</dt>
                 <dd>
                     <BoardsPicker drop={drop} />

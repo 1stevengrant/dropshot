@@ -88,6 +88,31 @@ final class CaptureActions {
         }
     }
 
+    /// Without a URL, asks for one; with one (from the URL scheme), captures straight away.
+    func captureWebPage(_ url: URL? = nil) {
+        guard let url else {
+            WebCaptureWindowController.present { url in Task { await self.capture(url: url) } }
+
+            return
+        }
+
+        Task { await capture(url: url) }
+    }
+
+    private func capture(url: URL) async {
+        do {
+            let host = (url.host() ?? "page").replacingOccurrences(of: "/", with: "-")
+            let capture = try await UploadCoordinator.shared.preparing(host) { try await WebPageCapture.capture(url) }
+            let fileURL = DropStore.capturesDirectory.appending(path: "Screenshot of \(host).png")
+
+            try capture.png.write(to: fileURL)
+
+            await UploadCoordinator.shared.upload(fileAt: fileURL, kind: .image, metadata: ["source-url": url.absoluteString, "title": capture.title.isEmpty ? host : capture.title])
+        } catch {
+            UploadCoordinator.shared.report(error)
+        }
+    }
+
     func newNote() {
         NoteWindowController.present()
     }

@@ -63,7 +63,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// dropshot://screenshot, dropshot://annotate, dropshot://record, dropshot://gif, dropshot://stop,
-    /// dropshot://clipboard, dropshot://note, dropshot://code, dropshot://upload?path=/absolute/file
+    /// dropshot://clipboard, dropshot://note, dropshot://code, dropshot://upload?path=/absolute/file,
+    /// dropshot://capture-url (asks for a URL) or dropshot://capture-url?url=https://example.com
     private func handle(_ url: URL) {
         if url.isFileURL {
             UploadCoordinator.shared.upload(files: [url])
@@ -92,6 +93,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             actions.newNote()
         case "code":
             actions.newCodeSnippet()
+        case "capture-url":
+            let address = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "url" }?.value
+            actions.captureWebPage(address.flatMap(WebCaptureURL.parse))
         case "upload":
             let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "path" }?.value
 

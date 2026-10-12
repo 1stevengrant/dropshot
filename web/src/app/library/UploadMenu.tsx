@@ -1,15 +1,16 @@
-import { ChevronDown, FileCode, Link2, Upload } from 'lucide-react';
+import { ChevronDown, FileCode, Globe, Link2, Upload } from 'lucide-react';
 import { Menu } from '../components/Menu';
 import { MenuItem } from '../components/MenuItem';
 
 interface UploadMenuProps {
     onUploadFiles: () => void;
     onShortenLink: () => void;
+    onCapturePage: () => void;
     onNewSnippet: () => void;
 }
 
 /** Droplr style split button: Upload file, with other ways to make a drop behind the arrow. */
-export function UploadMenu({ onUploadFiles, onShortenLink, onNewSnippet }: UploadMenuProps) {
+export function UploadMenu({ onUploadFiles, onShortenLink, onCapturePage, onNewSnippet }: UploadMenuProps) {
     return (
         <div className="join">
             <button type="button" onClick={onUploadFiles} className="join-item btn btn-primary btn-sm">
@@ -31,6 +32,9 @@ export function UploadMenu({ onUploadFiles, onShortenLink, onNewSnippet }: Uploa
                         </MenuItem>
                         <MenuItem onSelect={() => { close(); onShortenLink(); }}>
                             <Link2 size={15} /> Shorten link…
+                        </MenuItem>
+                        <MenuItem onSelect={() => { close(); onCapturePage(); }}>
+                            <Globe size={15} /> Capture web page…
                         </MenuItem>
                         <MenuItem onSelect={() => { close(); onNewSnippet(); }}>
                             <FileCode size={15} /> New code snippet…

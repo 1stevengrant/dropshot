@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import { type RefObject, useState } from 'react';
 import { CodeSnippetDialog } from './CodeSnippetDialog';
+import { ScreenshotDialog } from './ScreenshotDialog';
 import { ShortenLinkDialog } from './ShortenLinkDialog';
 import { UploadMenu } from './UploadMenu';
 
@@ -9,10 +10,12 @@ interface LibraryHeaderProps {
     onSearch: (value: string) => void;
     fileInput: RefObject<HTMLInputElement | null>;
     onUpload: (files: FileList | File[]) => void;
+    onCapture: (url: string, title?: string) => void;
 }
 
-export function LibraryHeader({ search, onSearch, fileInput, onUpload }: LibraryHeaderProps) {
+export function LibraryHeader({ search, onSearch, fileInput, onUpload, onCapture }: LibraryHeaderProps) {
     const [shortening, setShortening] = useState(false);
+    const [capturing, setCapturing] = useState(false);
     const [writingSnippet, setWritingSnippet] = useState(false);
 
     return (
@@ -27,9 +30,10 @@ export function LibraryHeader({ search, onSearch, fileInput, onUpload }: Library
                     className="w-full bg-transparent py-2 text-ink outline-none placeholder:text-muted"
                 />
             </label>
-            <UploadMenu onUploadFiles={() => fileInput.current?.click()} onShortenLink={() => setShortening(true)} onNewSnippet={() => setWritingSnippet(true)} />
+            <UploadMenu onUploadFiles={() => fileInput.current?.click()} onShortenLink={() => setShortening(true)} onCapturePage={() => setCapturing(true)} onNewSnippet={() => setWritingSnippet(true)} />
             <input ref={fileInput} type="file" multiple hidden onChange={(event) => { onUpload(event.target.files ?? []); event.target.value = ''; }} />
             {shortening && <ShortenLinkDialog onClose={() => setShortening(false)} />}
+            {capturing && <ScreenshotDialog onCapture={onCapture} onClose={() => setCapturing(false)} />}
             {writingSnippet && <CodeSnippetDialog onClose={() => setWritingSnippet(false)} />}
         </header>
     );

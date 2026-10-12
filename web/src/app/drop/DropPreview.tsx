@@ -3,6 +3,7 @@ import { Download, Link2 } from 'lucide-react';
 import type { Drop } from '../../shared/types';
 import { previewUrl } from '../lib/api';
 import { CodeBlock } from '../components/CodeBlock';
+import { ImagePreview } from './ImagePreview';
 import { formatBytes } from '../lib/format';
 
 export function DropPreview({ drop, version }: { drop: Drop; version: number }) {
@@ -11,7 +12,7 @@ export function DropPreview({ drop, version }: { drop: Drop; version: number }) 
 
     switch (drop.kind) {
         case 'image':
-            return <img src={src} alt={drop.title} className="max-h-full max-w-full rounded-lg shadow-lg" />;
+            return <ImagePreview key={drop.id} drop={drop} src={src} />;
         case 'video':
             return <video src={src} controls playsInline className="max-h-full max-w-full rounded-lg bg-black shadow-lg" />;
         case 'audio':

@@ -11,6 +11,8 @@ extension KeyboardShortcuts.Name {
     static let newNote = Self("newNote", default: .init(.n, modifiers: [.option, .shift]))
     /// Droplr had no default for code snippets.
     static let newCodeSnippet = Self("newCodeSnippet")
+    /// Droplr had no web page capture, so no default either.
+    static let captureWebPage = Self("captureWebPage")
     static let finishRecording = Self("finishRecording", default: .init(.d, modifiers: [.command, .shift]))
 }
 
@@ -21,6 +23,7 @@ enum Hotkeys {
         KeyboardShortcuts.onKeyUp(for: .captureAndAnnotate) { actions.screenshot(annotate: true) }
         KeyboardShortcuts.onKeyUp(for: .recordVideo) { actions.toggleRecording(as: .video) }
         KeyboardShortcuts.onKeyUp(for: .recordGIF) { actions.toggleRecording(as: .gif) }
+        KeyboardShortcuts.onKeyUp(for: .captureWebPage) { actions.captureWebPage() }
         KeyboardShortcuts.onKeyUp(for: .uploadFile) { actions.chooseFiles() }
         KeyboardShortcuts.onKeyUp(for: .newNote) { actions.newNote() }
         KeyboardShortcuts.onKeyUp(for: .newCodeSnippet) { actions.newCodeSnippet() }

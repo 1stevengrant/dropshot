@@ -93,8 +93,9 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
             return
         }
 
-        let total = uploads.activeUploads.map(\.progress).reduce(0, +) / Double(uploads.activeUploads.count)
-        button.title = " \(Int(total * 100))%"
+        let sending = uploads.activeUploads.filter { !$0.isPreparing }
+        let total = sending.map(\.progress).reduce(0, +) / Double(max(sending.count, 1))
+        button.title = sending.isEmpty ? " …" : " \(Int(total * 100))%"
         button.imagePosition = .imageLeading
     }
 
@@ -135,6 +136,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         menu.addItem(item("Screenshot and Annotate", symbol: "pencil.and.outline", action: #selector(screenshotAndAnnotate), hotkey: .captureAndAnnotate))
         menu.addItem(item("Record Video", symbol: "record.circle", action: #selector(recordVideo), hotkey: .recordVideo))
         menu.addItem(item("Record GIF", symbol: "photo.stack", action: #selector(recordGIF), hotkey: .recordGIF))
+        menu.addItem(item("Capture Web Page…", symbol: "globe", action: #selector(captureWebPage), hotkey: .captureWebPage))
         menu.addItem(.separator())
         menu.addItem(item("Upload File…", symbol: "arrow.up.doc", action: #selector(uploadFile), hotkey: .uploadFile))
         menu.addItem(item("Upload Clipboard", symbol: "doc.on.clipboard", action: #selector(uploadClipboard), hotkey: .uploadClipboard))
@@ -145,7 +147,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
             menu.addItem(.separator())
 
             for upload in uploads.activeUploads {
-                let progress = NSMenuItem(title: "Uploading \(upload.filename) (\(Int(upload.progress * 100))%)", action: nil, keyEquivalent: "")
+                let title = upload.isPreparing ? "Capturing \(upload.filename)…" : "Uploading \(upload.filename) (\(Int(upload.progress * 100))%)"
+                let progress = NSMenuItem(title: title, action: nil, keyEquivalent: "")
                 progress.isEnabled = false
                 menu.addItem(progress)
             }
@@ -265,6 +268,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
     @objc private func screenshotAndAnnotate() { actions.screenshot(annotate: true) }
     @objc private func recordVideo() { actions.startRecording(as: .video) }
     @objc private func recordGIF() { actions.startRecording(as: .gif) }
+    @objc private func captureWebPage() { actions.captureWebPage() }
     @objc private func uploadFile() { actions.chooseFiles() }
     @objc private func uploadClipboard() { uploads.uploadPasteboard() }
     @objc private func newNote() { actions.newNote() }

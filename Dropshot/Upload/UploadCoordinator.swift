@@ -7,10 +7,13 @@ import UserNotifications
 final class ActiveUpload: Identifiable {
     let id = UUID()
     let filename: String
+    /// Work that happens before the upload, like rendering a web page, has no byte progress to show.
+    let isPreparing: Bool
     var progress: Double = 0
 
-    init(filename: String) {
+    init(filename: String, isPreparing: Bool = false) {
         self.filename = filename
+        self.isPreparing = isPreparing
     }
 }
 
@@ -23,6 +26,16 @@ final class UploadCoordinator {
 
     @ObservationIgnored private let preferences = Preferences.shared
     @ObservationIgnored private let store = DropStore.shared
+
+    /// Lists slow work that comes before an upload (a web page capture) in the menu while it runs.
+    func preparing<T>(_ name: String, _ work: () async throws -> T) async rethrows -> T {
+        let active = ActiveUpload(filename: name, isPreparing: true)
+        activeUploads.append(active)
+
+        defer { activeUploads.removeAll { $0.id == active.id } }
+
+        return try await work()
+    }
 
     func upload(files: [URL]) {
         if files.isEmpty {
@@ -108,7 +121,8 @@ final class UploadCoordinator {
         }
     }
 
-    func upload(fileAt fileURL: URL, kind: DropKind) async {
+    /// `metadata` is stored on the object as `x-amz-meta-*`; the Worker's bucket sync reads `source-url` and `title`.
+    func upload(fileAt fileURL: URL, kind: DropKind, metadata: [String: String] = [:]) async {
         guard let configuration = preferences.storageConfiguration else {
             report(UploadError.notConfigured)
             SettingsOpener.open()
@@ -140,7 +154,7 @@ final class UploadCoordinator {
         let uploadedName = configuration.linkStyle == .shortId ? Self.shortName(for: filename, shortId: shortId) : filename
 
         do {
-            let result = try await uploader.upload(fileAt: prepared, filename: uploadedName, shortId: configuration.linkStyle == .shortId ? "" : shortId)
+            let result = try await uploader.upload(fileAt: prepared, filename: uploadedName, shortId: configuration.linkStyle == .shortId ? "" : shortId, metadata: metadata)
             let size = (try? prepared.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
             let discardLocal = kind == .link || (!preferences.keepLocalCopies && Self.isCapture(prepared))
 

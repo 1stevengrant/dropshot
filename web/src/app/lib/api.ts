@@ -50,6 +50,7 @@ export const api = {
     abortUpload: (id: string, uploadId: string, filename: string) =>
         request<void>(`/uploads/${id}?${new URLSearchParams({ uploadId, filename })}`, { method: 'DELETE' }),
     shorten: (url: string, title?: string) => request<Drop>('/links', { method: 'POST', body: JSON.stringify({ url, title }) }),
+    screenshot: (url: string, title?: string) => request<Drop>('/screenshots', { method: 'POST', body: JSON.stringify({ url, title }) }),
     replaceFile: (id: string, file: Blob, filename: string) =>
         request<Drop>(`/drops/${id}/file`, {
             method: 'PUT',

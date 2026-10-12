@@ -19,6 +19,8 @@
       "migrations_dir": "./migrations"
     }
   ],
+  // Headless Chrome for capturing web pages as screenshot drops.
+  "browser": { "binding": "BROWSER" },
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     // Cloudflare Access team domain and application audience tag, from Zero Trust › Access › Applications.

@@ -10,7 +10,7 @@ export function dropViewer(row: DropRow, src: string, text: string | null): stri
 
     switch (row.kind) {
         case 'image':
-            return `<img class="${media} bg-base-100" src="${url}" alt="${escape(row.title)}"${row.allow_download ? '' : ' oncontextmenu="return false" draggable="false"'}>`;
+            return zoomableImage(row, url);
         case 'video':
             return `<video class="${media} aspect-video w-full max-w-6xl bg-black object-contain" src="${url}" controls playsinline preload="metadata"${noDownload}></video>`;
         case 'audio':
@@ -28,6 +28,23 @@ export function dropViewer(row: DropRow, src: string, text: string | null): stri
         default:
             return fileCard(row, url);
     }
+}
+
+/**
+ * Images fit the window and a click toggles actual size, through a hidden checkbox so public pages stay script free.
+ * Web page captures are many screens tall, so they fit the width instead and zoom to the 1440px they were rendered at.
+ */
+function zoomableImage(row: DropRow, url: string): string {
+    const fit = row.target_url ? 'h-auto w-full' : 'max-h-[calc(100vh-10rem)] max-w-full';
+    const actualSize = row.target_url
+        ? 'group-has-checked:w-[1440px] group-has-checked:max-w-none'
+        : 'group-has-checked:max-h-none group-has-checked:max-w-none';
+    const protect = row.allow_download ? '' : ' oncontextmenu="return false" draggable="false"';
+
+    return `<label class="group block max-w-full cursor-zoom-in overflow-auto has-checked:cursor-zoom-out" title="Click to zoom">
+    <input type="checkbox" class="sr-only" aria-label="Zoom to actual size">
+    <img class="${fit} ${actualSize} mx-auto rounded-box bg-base-100 shadow-xl" src="${url}" alt="${escape(row.title)}"${protect}>
+</label>`;
 }
 
 function fileCard(row: DropRow, url: string): string {

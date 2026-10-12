@@ -9,6 +9,7 @@ import { DropGrid } from './DropGrid';
 import { DropOverlay } from './DropOverlay';
 import { DropTable } from './DropTable';
 import { kinds } from './kinds';
+import { CaptureStatus } from './CaptureStatus';
 import { LibraryHeader } from './LibraryHeader';
 import { LibraryToolbar } from './LibraryToolbar';
 import { LoadingBar } from './LoadingBar';
@@ -16,6 +17,7 @@ import { Pagination } from './Pagination';
 import { Sidebar } from './Sidebar';
 import { type SortOption, sorts } from './sorts';
 import { UploadStatus } from './UploadStatus';
+import { useCaptures } from './useCaptures';
 import { useUpload } from './useUpload';
 
 export function Library() {
@@ -46,6 +48,7 @@ export function Library() {
 
     const refresh = () => queryClient.invalidateQueries();
     const { progress, upload } = useUpload(refresh);
+    const captures = useCaptures(refresh);
 
     const remove = useMutation({
         mutationFn: api.remove,
@@ -202,7 +205,7 @@ export function Library() {
             <div className="flex min-w-0 flex-1 flex-col">
                 {/* Header and toolbar stay pinned so selection actions are always in reach while scrolling. */}
                 <div className="sticky top-0 z-20">
-                    <LibraryHeader search={search} onSearch={changeSearch} fileInput={fileInput} onUpload={upload} />
+                    <LibraryHeader search={search} onSearch={changeSearch} fileInput={fileInput} onUpload={upload} onCapture={captures.capture} />
 
                     <div className={`border-b px-6 py-3 backdrop-blur transition-colors ${selected.size > 0 ? 'border-primary/30 bg-accent-soft/95' : 'border-line bg-base-200/95'}`}>
                         <LibraryToolbar
@@ -234,6 +237,7 @@ export function Library() {
                     )}
 
                     {progress.files > 0 && <UploadStatus progress={progress} />}
+                    {captures.pending.length > 0 && <CaptureStatus captures={captures.pending} />}
 
                     {drops.isFetching && <LoadingBar />}
 

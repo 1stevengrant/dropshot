@@ -27,7 +27,7 @@ export function dropPage(row: DropRow, origin: string, text: string | null): str
         head: openGraph(row, `${origin}${directPath}`, `${origin}/${row.id}`),
         header: escape(row.title),
         actions: `${cta}${download}`,
-        body: `<div class="flex w-full max-w-[1400px] justify-center">${dropViewer(row, directPath, text)}</div>`,
+        body: `<div class="flex w-full max-w-[1400px] justify-center-safe">${dropViewer(row, directPath, text)}</div>`,
         footer: `<span>${meta}</span>`,
     });
 }

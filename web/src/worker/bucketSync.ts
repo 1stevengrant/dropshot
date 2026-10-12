@@ -1,6 +1,7 @@
 import { contentTypeFor, kindFor } from './kinds';
 import type { Drops } from './drops';
 import type { Env } from './types';
+import { parseHttpUrl } from './urls/parseHttpUrl';
 
 let inflightSync: Promise<number> | null = null;
 let lastSyncAt = 0;
@@ -50,7 +51,7 @@ export class BucketSync {
         let added = 0;
 
         do {
-            const page = await this.env.BUCKET.list({ prefix, cursor, include: ['httpMetadata'] });
+            const page = await this.env.BUCKET.list({ prefix, cursor, include: ['httpMetadata', 'customMetadata'] });
             cursor = page.truncated ? page.cursor : undefined;
 
             for (const object of page.objects) {
@@ -84,7 +85,7 @@ export class BucketSync {
 
         const contentType = contentTypeFor(filename, object.httpMetadata?.contentType);
         const kind = kindFor(filename, contentType);
-        const targetUrl = kind === 'link' ? await this.redirectTarget(object.key) : null;
+        const targetUrl = kind === 'link' ? await this.redirectTarget(object.key) : this.sourceUrl(object);
 
         await this.drops.insert({
             id,
@@ -97,7 +98,29 @@ export class BucketSync {
             targetUrl,
         });
 
+        const title = this.metadata(object, 'title');
+
+        if (title) {
+            await this.drops.update(id, { title });
+        }
+
         return true;
+    }
+
+    /** Web page captures from the Mac app carry the page they came from as `x-amz-meta-source-url`. */
+    private sourceUrl(object: R2Object): string | null {
+        return parseHttpUrl(this.metadata(object, 'source-url'))?.href ?? null;
+    }
+
+    /** The Mac app percent-encodes metadata values because S3 headers must be ASCII. */
+    private metadata(object: R2Object, name: string): string {
+        const value = object.customMetadata?.[name] ?? '';
+
+        try {
+            return decodeURIComponent(value).trim();
+        } catch {
+            return value.trim();
+        }
     }
 
     private async redirectTarget(key: string): Promise<string | null> {

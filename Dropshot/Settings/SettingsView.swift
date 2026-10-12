@@ -162,6 +162,7 @@ private struct ShortcutSettings: View {
             KeyboardShortcuts.Recorder("Record video:", name: .recordVideo)
             KeyboardShortcuts.Recorder("Record GIF:", name: .recordGIF)
             KeyboardShortcuts.Recorder("Finish recording:", name: .finishRecording)
+            KeyboardShortcuts.Recorder("Capture web page:", name: .captureWebPage)
             KeyboardShortcuts.Recorder("Upload file:", name: .uploadFile)
             KeyboardShortcuts.Recorder("New note:", name: .newNote)
             KeyboardShortcuts.Recorder("New code snippet:", name: .newCodeSnippet)

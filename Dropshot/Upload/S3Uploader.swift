@@ -80,7 +80,7 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         self.progressHandler = progress
     }
 
-    func upload(fileAt fileURL: URL, filename: String, shortId: String) async throws -> UploadResult {
+    func upload(fileAt fileURL: URL, filename: String, shortId: String, metadata: [String: String] = [:]) async throws -> UploadResult {
         let objectKey = Self.objectKey(prefix: configuration.keyPrefix, shortId: shortId, filename: filename)
         let encodedKey = objectKey.split(separator: "/").map { S3Signer.encodePathSegment(String($0)) }.joined(separator: "/")
 
@@ -103,6 +103,10 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         request.httpMethod = "PUT"
         request.setValue(Self.contentType(for: filename), forHTTPHeaderField: "Content-Type")
         request.setValue(Self.contentDisposition(for: filename), forHTTPHeaderField: "Content-Disposition")
+
+        for (name, value) in metadata {
+            request.setValue(Self.metadataValue(value), forHTTPHeaderField: "x-amz-meta-\(name)")
+        }
 
         signer.sign(&request, payloadHash: try S3Signer.sha256Hex(fileAt: fileURL))
 
@@ -142,6 +146,11 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         let base = configuration.publicBaseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 
         return URL(string: "\(base)/\(encodedKey)")!
+    }
+
+    /// S3 metadata travels as headers, which must be ASCII, so values are percent-encoded.
+    static func metadataValue(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "%"))) ?? ""
     }
 
     static func objectKey(prefix: String, shortId: String, filename: String) -> String {

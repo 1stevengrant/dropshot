@@ -1,22 +1,17 @@
 import { createRouter } from '../app';
 import { shortId } from '../ids/shortId';
 import { escape } from '../pages/html';
+import { parseHttpUrl } from '../urls/parseHttpUrl';
 
 export const linksApi = createRouter();
 
 /** Shortens a URL into a link drop. The redirect is stored like the Mac app's, as a tiny HTML page in R2. */
 linksApi.post('/api/links', async (c) => {
     const { url, title } = await c.req.json<{ url?: string; title?: string }>();
-    let target: URL;
+    const target = parseHttpUrl(url);
 
-    try {
-        target = new URL(String(url ?? '').trim());
-    } catch {
-        return c.json({ error: 'Enter a full URL, starting with https://' }, 422);
-    }
-
-    if (target.protocol !== 'https:' && target.protocol !== 'http:') {
-        return c.json({ error: 'Only http and https links can be shortened.' }, 422);
+    if (!target) {
+        return c.json({ error: 'Enter a full http or https URL, starting with https://' }, 422);
     }
 
     const id = shortId();

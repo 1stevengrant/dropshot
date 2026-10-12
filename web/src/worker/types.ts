@@ -3,6 +3,7 @@ import type { DropKind, Privacy } from '../shared/types';
 export interface Env {
     DB: D1Database;
     BUCKET: R2Bucket;
+    BROWSER: Fetcher;
     ASSETS: Fetcher;
     ACCESS_TEAM_DOMAIN: string;
     ACCESS_AUD: string;

@@ -2,7 +2,7 @@ import type { Drops } from '../drops';
 import { kindFor } from '../kinds';
 
 /** Registers a finished upload as a drop and returns it. */
-export async function recordUpload(drops: Drops, upload: { id: string; key: string; filename: string; contentType: string; size: number; title: string }) {
+export async function recordUpload(drops: Drops, upload: { id: string; key: string; filename: string; contentType: string; size: number; title: string; targetUrl?: string | null }) {
     await drops.insert({
         id: upload.id,
         objectKey: upload.key,
@@ -11,7 +11,7 @@ export async function recordUpload(drops: Drops, upload: { id: string; key: stri
         contentType: upload.contentType,
         size: upload.size,
         createdAt: Date.now(),
-        targetUrl: null,
+        targetUrl: upload.targetUrl ?? null,
     });
 
     if (upload.title) {
