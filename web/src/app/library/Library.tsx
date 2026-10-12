@@ -15,6 +15,7 @@ import { LoadingBar } from './LoadingBar';
 import { Pagination } from './Pagination';
 import { Sidebar } from './Sidebar';
 import { type SortOption, sorts } from './sorts';
+import { UploadStatus } from './UploadStatus';
 import { useUpload } from './useUpload';
 
 export function Library() {
@@ -44,7 +45,7 @@ export function Library() {
     const tags = useQuery({ queryKey: ['tags'], queryFn: api.tags });
 
     const refresh = () => queryClient.invalidateQueries();
-    const { uploading, upload } = useUpload(refresh);
+    const { progress, upload } = useUpload(refresh);
 
     const remove = useMutation({
         mutationFn: api.remove,
@@ -232,9 +233,7 @@ export function Library() {
                         </div>
                     )}
 
-                    {uploading > 0 && (
-                        <div role="status" className="alert alert-info alert-soft mb-4 py-2 text-sm"><span className="loading loading-spinner loading-sm" /> Uploading {uploading} file{uploading === 1 ? '' : 's'}…</div>
-                    )}
+                    {progress.files > 0 && <UploadStatus progress={progress} />}
 
                     {drops.isFetching && <LoadingBar />}
 

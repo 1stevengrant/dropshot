@@ -43,6 +43,12 @@ export const api = {
                 ...(title ? { 'X-Title': encodeURIComponent(title) } : {}),
             },
         }),
+    startUpload: (filename: string, contentType: string) =>
+        request<{ id: string; filename: string; uploadId: string }>('/uploads', { method: 'POST', body: JSON.stringify({ filename, contentType }) }),
+    completeUpload: (id: string, upload: { uploadId: string; filename: string; title?: string; parts: { partNumber: number; etag: string }[] }) =>
+        request<Drop>(`/uploads/${id}/complete`, { method: 'POST', body: JSON.stringify(upload) }),
+    abortUpload: (id: string, uploadId: string, filename: string) =>
+        request<void>(`/uploads/${id}?${new URLSearchParams({ uploadId, filename })}`, { method: 'DELETE' }),
     shorten: (url: string, title?: string) => request<Drop>('/links', { method: 'POST', body: JSON.stringify({ url, title }) }),
     replaceFile: (id: string, file: Blob, filename: string) =>
         request<Drop>(`/drops/${id}/file`, {

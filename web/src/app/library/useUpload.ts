@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { useToast } from '../components/Toast/useToast';
-import { api } from '../lib/api';
+import { chunkedUpload } from '../lib/chunkedUpload';
 import { copy } from '../lib/format';
 
+export interface UploadProgress {
+    files: number;
+    loaded: number;
+    total: number;
+}
+
+const idle: UploadProgress = { files: 0, loaded: 0, total: 0 };
+
 export function useUpload(onUploaded: () => void) {
-    const [uploading, setUploading] = useState(0);
+    const [progress, setProgress] = useState<UploadProgress>(idle);
     const toast = useToast();
 
     async function upload(files: FileList | File[]) {
@@ -14,9 +22,25 @@ export function useUpload(onUploaded: () => void) {
             return;
         }
 
-        setUploading((count) => count + list.length);
+        const sent = new Map<File, number>();
+        const batchBytes = list.reduce((sum, file) => sum + file.size, 0);
 
-        const results = await Promise.allSettled(list.map((file) => api.upload(file).finally(() => setUploading((count) => count - 1))));
+        setProgress((current) => ({ files: current.files + list.length, loaded: current.loaded, total: current.total + batchBytes }));
+
+        function report(file: File, bytes: number) {
+            const delta = bytes - (sent.get(file) ?? 0);
+            sent.set(file, bytes);
+            setProgress((current) => ({ ...current, loaded: current.loaded + delta }));
+        }
+
+        function finish(file: File) {
+            const remaining = file.size - (sent.get(file) ?? 0);
+            setProgress((current) => (current.files <= 1 ? idle : { files: current.files - 1, loaded: current.loaded + remaining, total: current.total }));
+        }
+
+        const results = await Promise.allSettled(
+            list.map((file) => chunkedUpload(file, { onProgress: (bytes) => report(file, bytes) }).finally(() => finish(file))),
+        );
         const uploaded = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
 
         if (uploaded.length === 1) {
@@ -33,5 +57,5 @@ export function useUpload(onUploaded: () => void) {
         onUploaded();
     }
 
-    return { uploading, upload };
+    return { progress, upload };
 }

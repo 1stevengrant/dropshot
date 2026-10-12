@@ -67,8 +67,11 @@ nonisolated struct UploadResult: Sendable {
     let directURL: URL
 }
 
-/// Uploads one file with a single signed PUT and reports byte progress.
+/// Uploads one file and reports byte progress: a single signed PUT for small files, a multipart upload for large ones.
 nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
+    /// Files above this go up in parts. Below it, one request is quicker and a retry costs little.
+    static let multipartThreshold: Int64 = 2 * S3MultipartUpload.partSize
+
     private let configuration: StorageConfiguration
     private let progressHandler: @Sendable (Double) -> Void
 
@@ -81,18 +84,27 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
         let objectKey = Self.objectKey(prefix: configuration.keyPrefix, shortId: shortId, filename: filename)
         let encodedKey = objectKey.split(separator: "/").map { S3Signer.encodePathSegment(String($0)) }.joined(separator: "/")
 
+        let signer = S3Signer(accessKeyId: configuration.accessKeyId, secretAccessKey: configuration.secretAccessKey, region: configuration.region)
+        let size = Int64((try fileURL.resourceValues(forKeys: [.fileSizeKey])).fileSize ?? 0)
+
+        if size > Self.multipartThreshold {
+            try await S3MultipartUpload(
+                objectURL: objectURL(encodedKey: encodedKey),
+                signer: signer,
+                contentType: Self.contentType(for: filename),
+                contentDisposition: Self.contentDisposition(for: filename),
+                progress: progressHandler
+            ).upload(fileAt: fileURL, size: size)
+
+            return UploadResult(objectKey: objectKey, directURL: publicURL(objectKey: objectKey, encodedKey: encodedKey))
+        }
+
         var request = URLRequest(url: objectURL(encodedKey: encodedKey))
         request.httpMethod = "PUT"
         request.setValue(Self.contentType(for: filename), forHTTPHeaderField: "Content-Type")
         request.setValue(Self.contentDisposition(for: filename), forHTTPHeaderField: "Content-Disposition")
 
-        let payloadHash = try S3Signer.sha256Hex(fileAt: fileURL)
-
-        S3Signer(
-            accessKeyId: configuration.accessKeyId,
-            secretAccessKey: configuration.secretAccessKey,
-            region: configuration.region
-        ).sign(&request, payloadHash: payloadHash)
+        signer.sign(&request, payloadHash: try S3Signer.sha256Hex(fileAt: fileURL))
 
         let (data, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL, delegate: self)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0

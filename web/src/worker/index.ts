@@ -11,6 +11,7 @@ import { dropsApi } from './routes/dropsApi';
 import { embed } from './routes/embed';
 import { files } from './routes/files';
 import { linksApi } from './routes/linksApi';
+import { multipartUploadApi } from './routes/multipartUploadApi';
 import { rawLink } from './routes/rawLink';
 import { tagsApi } from './routes/tagsApi';
 import { testUpload } from './routes/testUpload';
@@ -29,7 +30,7 @@ app.use('/api/*', ownerOnly);
 app.route('/_import', importer);
 
 // Order matters: specific routes before the /:id catch-alls, and <id>+ before /:id.
-for (const router of [assets, dashboard, dropsApi, trashApi, uploadApi, linksApi, tagsApi, boardsApi]) {
+for (const router of [assets, dashboard, dropsApi, trashApi, uploadApi, multipartUploadApi, linksApi, tagsApi, boardsApi]) {
     app.route('/', router);
 }
 
