@@ -34,6 +34,18 @@ export async function serveObject(c: AppContext, row: DropRow, download: boolean
     const body = 'body' in object ? (object as R2ObjectBody).body : null;
 
     if (!body) {
+        const ifMatch = c.req.header('If-Match');
+        const unmodifiedSince = c.req.header('If-Unmodified-Since');
+        const versionMismatch = ifMatch !== undefined
+            ? ifMatch.trim() !== '*' && !ifMatch.split(',').some((etag) => etag.trim() === object.httpEtag)
+            : unmodifiedSince !== undefined && Math.floor(object.uploaded.getTime() / 1000) > Math.floor(Date.parse(unmodifiedSince) / 1000);
+
+        if (c.req.method !== 'HEAD' && versionMismatch) {
+            headers.set('Content-Length', '0');
+
+            return new Response(null, { status: 412, headers });
+        }
+
         headers.set('Content-Length', String(object.size));
 
         return new Response(null, { status: c.req.method === 'HEAD' ? 200 : 304, headers });
