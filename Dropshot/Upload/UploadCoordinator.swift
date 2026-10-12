@@ -64,33 +64,30 @@ final class UploadCoordinator {
             return
         }
 
-        let fileURL = DropStore.capturesDirectory.appending(path: "Note \(Self.timestamp()).txt")
-
         do {
+            let fileURL = try Self.captureFile(named: "Note \(Self.timestamp()).txt")
             try trimmed.write(to: fileURL, atomically: true, encoding: .utf8)
+            Task { await upload(fileAt: fileURL, kind: .text) }
         } catch {
             report(error)
 
             return
         }
-
-        Task { await upload(fileAt: fileURL, kind: .text) }
     }
 
     func upload(snippet code: String, title: String, language: CodeLanguage) {
         let name = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "\(language.label) snippet \(Self.timestamp())" : title
         let safeName = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
-        let fileURL = DropStore.capturesDirectory.appending(path: "\(safeName).\(language.fileExtension)")
 
         do {
+            let fileURL = try Self.captureFile(named: "\(safeName).\(language.fileExtension)")
             try code.write(to: fileURL, atomically: true, encoding: .utf8)
+            Task { await upload(fileAt: fileURL, kind: .code) }
         } catch {
             report(error)
 
             return
         }
-
-        Task { await upload(fileAt: fileURL, kind: .code) }
     }
 
     func uploadPasteboard(_ pasteboard: NSPasteboard = .general) {
@@ -101,17 +98,15 @@ final class UploadCoordinator {
         }
 
         if let image = NSImage(pasteboard: pasteboard), let png = image.pngData {
-            let fileURL = DropStore.capturesDirectory.appending(path: "Pasted Image \(Self.timestamp()).png")
-
             do {
+                let fileURL = try Self.captureFile(named: "Pasted Image \(Self.timestamp()).png")
                 try png.write(to: fileURL)
+                upload(files: [fileURL])
             } catch {
                 report(error)
 
                 return
             }
-
-            upload(files: [fileURL])
 
             return
         }
@@ -193,21 +188,20 @@ final class UploadCoordinator {
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "<", with: "&lt;")
         let html = "<!doctype html><meta charset=utf-8><meta http-equiv=refresh content=\"0;url=\(escaped)\"><title>Redirecting</title><a href=\"\(escaped)\">\(escaped)</a>"
-        let fileURL = DropStore.capturesDirectory.appending(path: "index.html")
 
         do {
+            let fileURL = try Self.captureFile(named: "index.html")
             try html.write(to: fileURL, atomically: true, encoding: .utf8)
+            await upload(fileAt: fileURL, kind: .link)
         } catch {
             report(error)
 
             return
         }
-
-        await upload(fileAt: fileURL, kind: .link)
     }
 
     private func uploadBundle(of files: [URL]) async {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "Dropshot \(Self.timestamp())", directoryHint: .isDirectory)
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Dropshot \(UUID().uuidString)", directoryHint: .isDirectory)
 
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -226,9 +220,17 @@ final class UploadCoordinator {
         try? FileManager.default.removeItem(at: folder)
     }
 
+    /// Each generated file owns a directory so repeated display names cannot replace it.
+    static func captureFile(named filename: String) throws -> URL {
+        let directory = DropStore.capturesDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        return directory.appending(path: filename)
+    }
+
     /// Only files Dropshot created itself (captures, notes, pasted images, archives) are ever deleted, never the user's own.
     private static func isCapture(_ url: URL) -> Bool {
-        url.standardizedFileURL.deletingLastPathComponent().path == DropStore.capturesDirectory.standardizedFileURL.path
+        url.standardizedFileURL.path.hasPrefix(DropStore.capturesDirectory.standardizedFileURL.path + "/")
     }
 
     /// Folders and app bundles become zip archives, matching how a browser can serve them.
@@ -239,8 +241,7 @@ final class UploadCoordinator {
             return url
         }
 
-        let archive = DropStore.capturesDirectory.appending(path: "\(url.lastPathComponent).zip")
-        try? FileManager.default.removeItem(at: archive)
+        let archive = try Self.captureFile(named: "\(url.lastPathComponent).zip")
 
         try await Process.run("/usr/bin/ditto", arguments: ["-c", "-k", "--sequesterRsrc", "--keepParent", url.path, archive.path])
 
