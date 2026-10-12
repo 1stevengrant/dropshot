@@ -4,9 +4,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "dev:app": "vite",
-    "build": "vite build",
+    "build": "vite build && tailwindcss -i src/public/public.css -o dist/_assets/public.css --minify",
     "typecheck": "tsc",
-    "deploy": "vite build && wrangler deploy",
+    "deploy": "npm run build && wrangler deploy",
     "migrate": "wrangler d1 migrations apply dropshot --remote"
   },
   "dependencies": {
@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261011.1",
+    "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.104.2",
     "@types/react": "^19.3.0",

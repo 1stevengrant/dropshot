@@ -1,0 +1,84 @@
+/* Shared by the dashboard and the public drop pages. */
+@plugin "daisyui" {
+    themes: false;
+}
+
+@plugin "daisyui/theme" {
+    name: "dropshot";
+    default: true;
+    color-scheme: light;
+    --color-base-100: #ffffff;
+    --color-base-200: #f6f7f9;
+    --color-base-300: #e4e7ec;
+    --color-base-content: #16181d;
+    --color-primary: #3b6ef5;
+    --color-primary-content: #ffffff;
+    --color-secondary: #8e4ec6;
+    --color-secondary-content: #ffffff;
+    --color-accent: #3b6ef5;
+    --color-accent-content: #ffffff;
+    --color-neutral: #16181d;
+    --color-neutral-content: #f6f7f9;
+    --color-info: #3b6ef5;
+    --color-info-content: #ffffff;
+    --color-success: #30a46c;
+    --color-success-content: #ffffff;
+    --color-warning: #ffc53d;
+    --color-warning-content: #2e1f00;
+    --color-error: #e5484d;
+    --color-error-content: #ffffff;
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.75rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+    name: "dropshot-dark";
+    prefersdark: true;
+    color-scheme: dark;
+    --color-base-100: #171a21;
+    --color-base-200: #0f1115;
+    --color-base-300: #262a33;
+    --color-base-content: #e9ebf0;
+    --color-primary: #6d93ff;
+    --color-primary-content: #0f1115;
+    --color-secondary: #b48ce0;
+    --color-secondary-content: #0f1115;
+    --color-accent: #6d93ff;
+    --color-accent-content: #0f1115;
+    --color-neutral: #e9ebf0;
+    --color-neutral-content: #0f1115;
+    --color-info: #6d93ff;
+    --color-info-content: #0f1115;
+    --color-success: #3dd68c;
+    --color-success-content: #0f1115;
+    --color-warning: #ffc53d;
+    --color-warning-content: #2e1f00;
+    --color-error: #ff6369;
+    --color-error-content: #0f1115;
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.75rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}
+
+/* Names used across the app, mapped onto the daisyUI theme so both light and dark follow it. */
+@theme inline {
+    --color-canvas: var(--color-base-200);
+    --color-panel: var(--color-base-100);
+    --color-ink: var(--color-base-content);
+    --color-muted: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    --color-line: var(--color-base-300);
+    --color-accent-soft: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
+    --color-danger: var(--color-error);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+}

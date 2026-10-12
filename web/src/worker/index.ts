@@ -5,7 +5,10 @@ import { isOwner, isOwnerAnywhere, ownerCookieHeader } from './access';
 import { type DropRow, Drops, type Env } from './drops';
 import { contentTypeFor, kindFor } from './kinds';
 import { importer } from './import';
-import { dropPage, embedPage, messagePage, passwordPage } from './page';
+import { dropPage } from './pages/dropPage';
+import { embedPage } from './pages/embedPage';
+import { messagePage } from './pages/messagePage';
+import { passwordPage } from './pages/passwordPage';
 import { unlockToken, verifyPassword } from './password';
 
 type App = { Bindings: Env; Variables: { drops: Drops } };
@@ -38,6 +41,9 @@ async function ownerOnly(c: Context<App>, next: () => Promise<void>) {
 }
 
 app.route('/_import', importer);
+
+/** The public pages' daisyUI stylesheet. */
+app.get('/_assets/*', (c) => c.env.ASSETS.fetch(c.req.raw));
 
 app.get('/', (c) => c.redirect('/app/'));
 

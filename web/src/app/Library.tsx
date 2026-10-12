@@ -395,13 +395,19 @@ function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: boolean;
     const toast = useToast();
 
     return (
-        <article className={`card group relative overflow-hidden border bg-base-100 shadow-sm transition hover:shadow-md ${selected ? 'border-primary ring-2 ring-primary/40' : 'border-base-300'}`}>
+        <article
+            className={`card group relative overflow-hidden border shadow-sm transition hover:shadow-md ${
+                selected ? 'border-primary bg-accent-soft outline-2 -outline-offset-1 outline-primary' : 'border-base-300 bg-base-100'
+            }`}
+        >
             <input
                 type="checkbox"
                 checked={selected}
                 onChange={onToggle}
                 aria-label={`Select ${drop.title}`}
-                className={`checkbox checkbox-sm checkbox-primary absolute top-2 left-2 z-10 bg-base-100 ${selected ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+                className={`checkbox checkbox-sm checkbox-primary absolute top-2.5 left-2.5 z-10 shadow-md ${
+                    selected ? '' : 'border-base-300 bg-base-100 opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+                }`}
             />
 
             <a href={`/${drop.id}`} className="relative block aspect-[4/3] overflow-hidden bg-canvas">

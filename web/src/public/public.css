@@ -1,0 +1,10 @@
+@import "tailwindcss" source(none);
+@source "../worker/pages";
+@import "../theme.css";
+
+@layer base {
+    a[href],
+    button:not(:disabled) {
+        cursor: pointer;
+    }
+}
