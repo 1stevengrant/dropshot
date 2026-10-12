@@ -75,7 +75,7 @@ function DropView({ drop }: { drop: Drop }) {
         queryClient.invalidateQueries({ queryKey: ['drops'] });
         setMarking(false);
         toast('Saved as a new drop. Link copied.');
-        navigate(`/d/${created.id}`);
+        navigate(`/${created.id}`);
     }
 
     const update = useMutation({

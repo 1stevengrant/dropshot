@@ -404,19 +404,19 @@ function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: boolean;
                 {selected && <Check size={14} />}
             </button>
 
-            <Link to={`/d/${drop.id}`} className="relative block aspect-[4/3] overflow-hidden bg-canvas">
+            <a href={`/${drop.id}`} className="relative block aspect-[4/3] overflow-hidden bg-canvas">
                 <Thumbnail drop={drop} />
                 {drop.kind === 'video' && (
                     <span className="absolute inset-0 flex items-center justify-center">
                         <span className="flex size-12 items-center justify-center rounded-full bg-black/55 text-white">▶</span>
                     </span>
                 )}
-            </Link>
+            </a>
 
             <div className="flex flex-1 flex-col gap-1 p-4">
-                <Link to={`/d/${drop.id}`} className="truncate font-medium hover:text-accent" title={drop.title}>
+                <a href={`/${drop.id}`} className="truncate font-medium hover:text-accent" title={drop.title}>
                     {drop.title}
-                </Link>
+                </a>
                 <a href={drop.pageUrl} target="_blank" rel="noreferrer" className="truncate text-sm text-accent hover:underline">
                     {drop.pageUrl.replace(/^https?:\/\//, '')}
                 </a>
@@ -463,11 +463,11 @@ function DropTable({ drops, selected, onToggle }: { drops: Drop[]; selected: Set
                                 <input type="checkbox" checked={selected.has(drop.id)} onChange={() => onToggle(drop.id)} className="size-4 accent-accent" aria-label={`Select ${drop.title}`} />
                             </td>
                             <td className="px-2 py-2">
-                                <Link to={`/d/${drop.id}`} className="flex items-center gap-3 hover:text-accent">
+                                <a href={`/${drop.id}`} className="flex items-center gap-3 hover:text-accent">
                                     <span className="size-10 shrink-0 overflow-hidden rounded-md bg-canvas"><Thumbnail drop={drop} /></span>
                                     <span className="truncate font-medium">{drop.title}</span>
                                     <StatusBadges drop={drop} />
-                                </Link>
+                                </a>
                             </td>
                             <td className="px-2 py-2 whitespace-nowrap text-muted">{formatBytes(drop.size)}</td>
                             <td className="px-2 py-2 text-muted">{drop.views}</td>

@@ -216,9 +216,12 @@ app.get('/:id', async (c) => {
 
     const owner = await isOwnerAnywhere(c.req.raw, c.env);
 
-    // Like Droplr, the owner gets the management view at the share link; ?preview shows what visitors see.
+    // Like Droplr, the owner gets the management view at the share link itself (the address stays the same);
+    // ?preview shows what visitors see.
     if (owner && c.req.query('preview') === undefined) {
-        return c.redirect(`/app/d/${row.id}`, 302);
+        const shell = await c.env.ASSETS.fetch(new Request(new URL('/app/', c.req.url)));
+
+        return new Response(shell.body, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store' } });
     }
 
     if (!owner) {
