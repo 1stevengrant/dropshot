@@ -85,8 +85,11 @@ export class BucketSync {
         }
 
         const contentType = contentTypeFor(filename, object.httpMetadata?.contentType);
-        const kind = filename === 'index.html' ? 'link' : kindFor(filename, contentType);
-        const targetUrl = kind === 'link' ? await this.redirectTarget(object.key) : this.sourceUrl(object);
+        const redirect = filename === 'index.html' || (slash === -1 && filename.endsWith('.html'))
+            ? await this.redirectTarget(object.key)
+            : null;
+        const kind = redirect ? 'link' : kindFor(filename, contentType);
+        const targetUrl = redirect ?? this.sourceUrl(object);
 
         await this.drops.insert({
             id,
@@ -131,6 +134,8 @@ export class BucketSync {
         const html = object ? await object.text() : '';
         const match = html.match(/url=([^"]+)"/i);
 
-        return match ? match[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<') : null;
+        const target = match ? match[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<') : null;
+
+        return parseHttpUrl(target)?.href ?? null;
     }
 }
