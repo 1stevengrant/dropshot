@@ -118,11 +118,10 @@ export function Library() {
     function changeSearch(value: string) {
         setSearch(value);
 
-        if (params.has('page')) {
-            const next = new URLSearchParams(params);
-            next.delete('page');
-            setParams(next);
-        }
+        const next = new URLSearchParams(params);
+        value ? next.set('q', value) : next.delete('q');
+        next.delete('page');
+        setParams(next, { replace: true });
     }
 
     function changeView(mode: 'grid' | 'list') {
@@ -159,8 +158,8 @@ export function Library() {
 
     // Kept in session storage so leaving a drop (back, delete) returns to this exact view.
     useEffect(() => {
-        rememberLibraryLocation(params.toString(), deferredSearch);
-    }, [params, deferredSearch]);
+        rememberLibraryLocation(params.toString(), search);
+    }, [params, search]);
 
     // Deleting the last drops on the final page would leave you on an empty page; step back to the last real one.
     useEffect(() => {
