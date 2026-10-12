@@ -6,19 +6,22 @@ enum MicrophoneChoice {
     static let none = ""
     static let systemDefault = "default"
 
-    /// Audio inputs as (unique ID, name); screencapture's -G accepts the AVCaptureDevice unique ID.
+    /// Audio inputs as (unique ID, name); ScreenCaptureKit's `microphoneCaptureDeviceID` takes the AVCaptureDevice unique ID.
     static var devices: [(id: String, name: String)] {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone, .external], mediaType: .audio, position: .unspecified)
             .devices
             .map { ($0.uniqueID, $0.localizedName) }
     }
 
-    static func arguments(for choice: String) -> [String] {
-        switch choice {
-        case none: []
-        case systemDefault: ["-g"]
-        default: ["-G\(choice)"]
+    /// The input's channel count, so the microphone track matches it. Falls back to mono.
+    static func channelCount(for choice: String) -> Int {
+        let device = choice == systemDefault ? AVCaptureDevice.default(for: .audio) : AVCaptureDevice(uniqueID: choice)
+
+        guard let format = device?.activeFormat.formatDescription, let description = CMAudioFormatDescriptionGetStreamBasicDescription(format) else {
+            return 1
         }
+
+        return Int(description.pointee.mChannelsPerFrame)
     }
 }
 
@@ -87,6 +90,8 @@ final class Preferences {
     var microphone: String { didSet { defaults.set(microphone, forKey: Keys.microphone) } }
     var recordSystemAudio: Bool { didSet { defaults.set(recordSystemAudio, forKey: Keys.recordSystemAudio) } }
     var showClicksInRecordings: Bool { didSet { defaults.set(showClicksInRecordings, forKey: Keys.showClicksInRecordings) } }
+    /// Seconds counted down before a recording starts; 0 starts straight away.
+    var recordingCountdown: Int { didSet { defaults.set(recordingCountdown, forKey: Keys.recordingCountdown) } }
     var autoUploadScreenshots: Bool { didSet { defaults.set(autoUploadScreenshots, forKey: Keys.autoUploadScreenshots) } }
     var playSounds: Bool { didSet { defaults.set(playSounds, forKey: Keys.playSounds) } }
     var showNotifications: Bool { didSet { defaults.set(showNotifications, forKey: Keys.showNotifications) } }
@@ -106,6 +111,7 @@ final class Preferences {
             Keys.microphone: MicrophoneChoice.systemDefault,
             Keys.recordSystemAudio: true,
             Keys.showClicksInRecordings: false,
+            Keys.recordingCountdown: 3,
             Keys.autoUploadScreenshots: false,
             Keys.playSounds: true,
             Keys.showNotifications: true,
@@ -129,6 +135,7 @@ final class Preferences {
         microphone = defaults.string(forKey: Keys.microphone) ?? MicrophoneChoice.systemDefault
         recordSystemAudio = defaults.bool(forKey: Keys.recordSystemAudio)
         showClicksInRecordings = defaults.bool(forKey: Keys.showClicksInRecordings)
+        recordingCountdown = defaults.integer(forKey: Keys.recordingCountdown)
         autoUploadScreenshots = defaults.bool(forKey: Keys.autoUploadScreenshots)
         playSounds = defaults.bool(forKey: Keys.playSounds)
         showNotifications = defaults.bool(forKey: Keys.showNotifications)
@@ -172,6 +179,7 @@ final class Preferences {
         static let microphone = "capture.microphone"
         static let recordSystemAudio = "capture.recordSystemAudio"
         static let showClicksInRecordings = "capture.showClicks"
+        static let recordingCountdown = "capture.recordingCountdown"
         static let autoUploadScreenshots = "capture.autoUploadScreenshots"
         static let playSounds = "general.playSounds"
         static let showNotifications = "general.showNotifications"

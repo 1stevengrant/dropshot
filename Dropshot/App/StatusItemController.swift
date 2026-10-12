@@ -37,12 +37,6 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
     // MARK: - Button
 
     @objc private func statusItemClicked() {
-        if recorder.isRecording {
-            actions.stopRecording()
-
-            return
-        }
-
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
@@ -50,7 +44,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
 
     private func observeState() {
         withObservationTracking {
-            _ = recorder.isRecording
+            _ = recorder.state
             _ = uploads.activeUploads.map(\.progress)
         } onChange: { [weak self] in
             Task { @MainActor in
@@ -66,10 +60,10 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         }
 
         if recorder.isRecording {
-            button.image = NSImage(systemSymbolName: "stop.circle.fill", accessibilityDescription: "Stop recording")
-            button.contentTintColor = .systemRed
+            button.image = NSImage(systemSymbolName: recorder.isPaused ? "pause.circle.fill" : "stop.circle.fill", accessibilityDescription: "Recording")
+            button.contentTintColor = recorder.isPaused ? .systemOrange : .systemRed
             button.imagePosition = .imageLeading
-            button.toolTip = "Recording. Click to stop (⇧⌘D)"
+            button.toolTip = recorder.isPaused ? "Recording paused" : "Recording. Finish with ⇧⌘D"
             updateRecordingTitle()
 
             if recordingTimer == nil {
@@ -100,12 +94,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
     }
 
     private func updateRecordingTitle() {
-        guard let startedAt = recorder.startedAt else {
-            return
-        }
-
-        let seconds = Int(Date.now.timeIntervalSince(startedAt))
-        statusItem.button?.title = String(format: " %d:%02d", seconds / 60, seconds % 60)
+        statusItem.button?.title = recorder.state == .countdown ? "" : " \(ScreenRecorder.format(recorder.elapsed()))"
     }
 
     // MARK: - Drag and drop onto the icon
@@ -131,6 +120,12 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+
+        if recorder.isRecording {
+            addRecordingControls(to: menu)
+
+            return
+        }
 
         menu.addItem(item("Take Screenshot", symbol: "camera.viewfinder", action: #selector(screenshot), hotkey: .captureScreenshot))
         menu.addItem(item("Screenshot and Annotate", symbol: "pencil.and.outline", action: #selector(screenshotAndAnnotate), hotkey: .captureAndAnnotate))
@@ -159,6 +154,25 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         menu.addItem(.separator())
         menu.addItem(item("Settings…", symbol: "gearshape", action: #selector(openSettings), key: ","))
         menu.addItem(item("Quit Dropshot", symbol: nil, action: #selector(quit), key: "q"))
+    }
+
+    private func addRecordingControls(to menu: NSMenu) {
+        menu.addItem(item("Finish Recording", symbol: "stop.fill", action: #selector(finishRecording), hotkey: .finishRecording))
+        menu.addItem(item(recorder.isPaused ? "Resume" : "Pause", symbol: recorder.isPaused ? "play.fill" : "pause.fill", action: #selector(togglePause), hotkey: .pauseRecording))
+
+        if recorder.hasMicrophone {
+            menu.addItem(item(recorder.isMuted ? "Unmute Microphone" : "Mute Microphone", symbol: recorder.isMuted ? "mic.fill" : "mic.slash.fill", action: #selector(toggleMute), hotkey: .muteRecording))
+        }
+
+        menu.addItem(.separator())
+        menu.addItem(item("Cancel Recording", symbol: "trash", action: #selector(cancelRecording)))
+
+        // During the countdown only Cancel applies; while the movie is being written nothing does.
+        let isCapturing = recorder.state == .recording || recorder.state == .paused
+
+        for entry in menu.items {
+            entry.isEnabled = entry.action == #selector(cancelRecording) ? recorder.state != .finishing : isCapturing
+        }
     }
 
     private func addRecentDrops(to menu: NSMenu) {
@@ -270,6 +284,10 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
     @objc private func screenshotAndAnnotate() { actions.screenshot(annotate: true) }
     @objc private func recordVideo() { actions.startRecording(as: .video) }
     @objc private func recordGIF() { actions.startRecording(as: .gif) }
+    @objc private func finishRecording() { actions.stopRecording() }
+    @objc private func togglePause() { actions.togglePause() }
+    @objc private func toggleMute() { actions.toggleMute() }
+    @objc private func cancelRecording() { actions.cancelRecording() }
     @objc private func captureWebPage() { actions.captureWebPage() }
     @objc private func uploadFile() { actions.chooseFiles() }
     @objc private func uploadClipboard() { uploads.uploadPasteboard() }
