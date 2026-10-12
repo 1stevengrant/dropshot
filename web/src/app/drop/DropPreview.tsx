@@ -38,7 +38,7 @@ export function DropPreview({ drop, version }: { drop: Drop; version: number }) 
                 <div className="rounded-xl border border-line bg-panel p-10 text-center">
                     <p className="mb-1 text-lg font-medium">{drop.filename}</p>
                     <p className="mb-5 text-muted">{formatBytes(drop.size)}</p>
-                    <a href={`${src}?download=1`} className="btn btn-primary">
+                    <a href={`${src}&download=1`} className="btn btn-primary">
                         <Download size={16} /> Download
                     </a>
                 </div>
