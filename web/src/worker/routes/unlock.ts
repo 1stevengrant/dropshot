@@ -19,13 +19,17 @@ unlock.post('/:id/unlock', async (c) => {
         return c.html(passwordPage(row, true), 401);
     }
 
-    setCookie(c, `unlock_${row.id}`, await unlockToken(row.id, row.password_hash), {
-        path: `/${row.id}`,
-        httpOnly: true,
-        secure: true,
-        sameSite: 'Lax',
-        maxAge: 60 * 60 * 24 * 30,
-    });
+    const token = await unlockToken(row.id, row.password_hash);
+
+    for (const path of [`/${row.id}`, `/${row.id}+`]) {
+        setCookie(c, `unlock_${row.id}`, token, {
+            path,
+            httpOnly: true,
+            secure: true,
+            sameSite: 'Lax',
+            maxAge: 60 * 60 * 24 * 30,
+        });
+    }
 
     return c.redirect(`/${row.id}`, 303);
 });
