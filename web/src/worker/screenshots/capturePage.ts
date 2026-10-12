@@ -1,9 +1,13 @@
 import puppeteer, { type Page } from '@cloudflare/puppeteer';
 
+import { captureTiles } from './captureTiles';
+import { stitchTiles } from './stitchTiles';
+
 const width = 1440;
-// Headless Chromium repeats the top of the page past 8192 device pixels, so tall pages drop to 1x.
-const maxDevicePixels = 8192;
-const maxHeight = maxDevicePixels;
+const viewportHeight = 900;
+const maxHeight = 8192;
+// Chromium can't encode a WebP taller than 16,383 pixels, so the tallest pages drop to 1x.
+const maxWebpPixels = 16383;
 // Library cards are 4:3; 640px wide covers them on Retina screens.
 const thumbnailWidth = 640;
 
@@ -17,23 +21,23 @@ export async function capturePage(binding: Fetcher, url: URL): Promise<{ webp: U
     try {
         const page = await browser.newPage();
 
-        await page.setViewport({ width, height: 900, deviceScaleFactor: 2 });
+        await page.setViewport({ width, height: viewportHeight, deviceScaleFactor: 2 });
         await page.goto(url.href, { waitUntil: 'networkidle2', timeout: 30_000 });
         await loadLazyContent(page);
 
+        const title = (await page.title()).trim();
         const height = Math.min(await page.evaluate(() => document.documentElement.scrollHeight), maxHeight);
-
-        // A viewport as tall as the page puts every section in view, so fixed headers stay at the top and scroll
-        // triggered reveals run. Capturing beyond a short viewport instead repeats and blanks parts of the page.
-        await page.setViewport({ width, height, deviceScaleFactor: height * 2 <= maxDevicePixels ? 2 : 1 });
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        const webp = await page.screenshot({ type: 'webp', quality: 80 });
+        const scale = height * 2 <= maxWebpPixels ? 2 : 1;
 
         await page.setViewport({ width, height: width * 0.75, deviceScaleFactor: thumbnailWidth / width });
         const thumbnail = await page.screenshot({ type: 'webp', quality: 75 });
 
-        return { webp, thumbnail, title: (await page.title()).trim() };
+        await page.setViewport({ width, height: viewportHeight, deviceScaleFactor: scale });
+        await page.evaluate(() => document.documentElement.style.setProperty('scroll-behavior', 'auto', 'important'));
+
+        const webp = await stitchTiles(browser, await captureTiles(page, height), { width, height, scale });
+
+        return { webp, thumbnail, title };
     } finally {
         await browser.close();
     }
