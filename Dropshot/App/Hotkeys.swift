@@ -15,9 +15,10 @@ extension KeyboardShortcuts.Name {
     /// Droplr had no web page capture, so no default either.
     static let captureWebPage = Self("captureWebPage")
     static let finishRecording = Self("finishRecording", default: .init(.d, modifiers: [.command, .shift]))
-    /// Only active while recording, so they don't take ⌥⇧7 and ⌥M from other apps the rest of the time.
+    /// Only active while recording, so they don't take ⌥⇧7, ⌥M and Esc from other apps the rest of the time.
     static let pauseRecording = Self("pauseRecording", default: .init(.seven, modifiers: [.option, .shift]))
     static let muteRecording = Self("muteRecording", default: .init(.m, modifiers: [.option]))
+    static let cancelRecording = Self("cancelRecording", default: .init(.escape))
 }
 
 enum Hotkeys {
@@ -34,6 +35,7 @@ enum Hotkeys {
         KeyboardShortcuts.onKeyUp(for: .finishRecording) { actions.stopRecording() }
         KeyboardShortcuts.onKeyUp(for: .pauseRecording) { ScreenRecorder.shared.togglePause() }
         KeyboardShortcuts.onKeyUp(for: .muteRecording) { ScreenRecorder.shared.toggleMute() }
+        KeyboardShortcuts.onKeyUp(for: .cancelRecording) { ScreenRecorder.shared.cancel() }
 
         enableRecordingShortcutsWhileRecording()
     }
@@ -41,9 +43,9 @@ enum Hotkeys {
     private static func enableRecordingShortcutsWhileRecording() {
         withObservationTracking {
             if ScreenRecorder.shared.isRecording {
-                KeyboardShortcuts.enable(.pauseRecording, .muteRecording)
+                KeyboardShortcuts.enable(.pauseRecording, .muteRecording, .cancelRecording)
             } else {
-                KeyboardShortcuts.disable(.pauseRecording, .muteRecording)
+                KeyboardShortcuts.disable(.pauseRecording, .muteRecording, .cancelRecording)
             }
         } onChange: {
             Task { @MainActor in

@@ -165,7 +165,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
         }
 
         menu.addItem(.separator())
-        menu.addItem(item("Cancel Recording", symbol: "trash", action: #selector(cancelRecording)))
+        menu.addItem(item("Cancel Recording", symbol: "trash", action: #selector(cancelRecording), hotkey: .cancelRecording))
 
         // During the countdown only Cancel applies; while the movie is being written nothing does.
         let isCapturing = recorder.state == .recording || recorder.state == .paused

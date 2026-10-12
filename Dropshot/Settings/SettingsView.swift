@@ -206,6 +206,7 @@ private struct ShortcutSettings: View {
             KeyboardShortcuts.Recorder("Finish recording:", name: .finishRecording)
             KeyboardShortcuts.Recorder("Pause or resume recording:", name: .pauseRecording)
             KeyboardShortcuts.Recorder("Mute or unmute microphone:", name: .muteRecording)
+            KeyboardShortcuts.Recorder("Cancel recording:", name: .cancelRecording)
             KeyboardShortcuts.Recorder("Capture web page:", name: .captureWebPage)
             KeyboardShortcuts.Recorder("Upload file:", name: .uploadFile)
             KeyboardShortcuts.Recorder("New note:", name: .newNote)
