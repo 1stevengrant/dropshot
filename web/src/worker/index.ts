@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import type { DropKind, DropQuery, DropUpdate } from '../shared/types';
-import { isOwner } from './access';
+import { isOwner, isOwnerAnywhere, ownerCookieHeader } from './access';
 import { type DropRow, Drops, type Env } from './drops';
 import { contentTypeFor, kindFor } from './kinds';
 import { importer } from './import';
@@ -28,6 +28,13 @@ async function ownerOnly(c: Context<App>, next: () => Promise<void>) {
     }
 
     await next();
+
+    const header = c.req.path.startsWith('/app') ? await ownerCookieHeader(c.env) : null;
+
+    if (header) {
+        c.res = new Response(c.res.body, c.res);
+        c.res.headers.append('Set-Cookie', header);
+    }
 }
 
 app.route('/_import', importer);
@@ -103,6 +110,22 @@ app.get('/api/drops/:id/file', async (c) => {
     return row ? serveObject(c, row, c.req.query('download') === '1') : c.notFound();
 });
 
+app.get('/api/drops/:id/activity', async (c) => c.json(await c.get('drops').activity(c.req.param('id'))));
+
+app.put('/api/drops/:id/file', async (c) => {
+    const drops = c.get('drops');
+    const row = await drops.find(c.req.param('id'));
+    const filename = decodeURIComponent(c.req.header('X-Filename') ?? '').replace(/[/\\]/g, '_').trim();
+
+    if (!row || !filename || !c.req.raw.body) {
+        return c.json({ error: 'Missing drop or file.' }, 422);
+    }
+
+    await drops.replaceFile(row, filename, contentTypeFor(filename, c.req.header('Content-Type')), c.req.raw.body);
+
+    return c.json(await drops.get(row.id));
+});
+
 app.post('/api/upload', async (c) => {
     const filename = decodeURIComponent(c.req.header('X-Filename') ?? '').replace(/[/\\]/g, '_').trim();
 
@@ -112,12 +135,17 @@ app.post('/api/upload', async (c) => {
 
     const id = shortId();
     const key = [c.env.KEY_PREFIX.replace(/\/+$/, ''), id, filename].filter(Boolean).join('/');
+    const title = decodeURIComponent(c.req.header('X-Title') ?? '').trim();
     const contentType = contentTypeFor(filename, c.req.header('Content-Type'));
 
     const object = await c.env.BUCKET.put(key, c.req.raw.body, { httpMetadata: { contentType } });
     const drops = c.get('drops');
 
     await drops.insert({ id, objectKey: key, filename, kind: kindFor(filename, contentType), contentType, size: object.size, createdAt: Date.now(), targetUrl: null });
+
+    if (title) {
+        await drops.update(id, { title });
+    }
 
     return c.json(await drops.get(id), 201);
 });
@@ -174,17 +202,22 @@ app.get('/:id', async (c) => {
         return row;
     }
 
-    if (row.kind === 'link' && row.target_url) {
-        c.executionCtx.waitUntil(drops.recordView(row.id));
+    const owner = await isOwnerAnywhere(c.req.raw, c.env);
 
+    // Like Droplr, the owner gets the management view at the share link; ?preview shows what visitors see.
+    if (owner && c.req.query('preview') === undefined) {
+        return c.redirect(`/app/d/${row.id}`, 302);
+    }
+
+    if (!owner) {
+        c.executionCtx.waitUntil(drops.recordVisit(row.id, visitFrom(c.req.raw, 'view')));
+    }
+
+    if (row.kind === 'link' && row.target_url) {
         return c.redirect(row.target_url, 302);
     }
 
     const text = row.kind === 'text' && row.size <= 1_000_000 ? await (await c.env.BUCKET.get(row.object_key))?.text() ?? '' : null;
-
-    if (!(await isOwner(c.req.raw, c.env))) {
-        c.executionCtx.waitUntil(drops.recordView(row.id));
-    }
 
     return c.html(dropPage(row, new URL(c.req.url).origin, text), 200, { 'Cache-Control': 'private, no-store' });
 });
@@ -223,8 +256,14 @@ app.on(['GET', 'HEAD'], '/:id/*', async (c) => {
 
     const download = c.req.query('download') === '1';
 
-    if (download && !row.allow_download && !(await isOwner(c.req.raw, c.env))) {
+    const owner = await isOwnerAnywhere(c.req.raw, c.env);
+
+    if (download && !row.allow_download && !owner) {
         return c.text('Downloads are disabled for this drop.', 403);
+    }
+
+    if (download && !owner) {
+        c.executionCtx.waitUntil(c.get('drops').recordVisit(row.id, visitFrom(c.req.raw, 'download')));
     }
 
     return serveObject(c, row, download);
@@ -254,7 +293,7 @@ async function viewableDrop(c: Context<App>): Promise<DropRow | Response> {
         return row;
     }
 
-    if (await isOwner(c.req.raw, c.env)) {
+    if (await isOwnerAnywhere(c.req.raw, c.env)) {
         return row;
     }
 
@@ -316,6 +355,34 @@ async function serveObject(c: Context<App>, row: DropRow, download: boolean): Pr
     headers.set('Content-Length', String(object.size));
 
     return new Response(body, { status: 200, headers });
+}
+
+function visitFrom(request: Request, kind: 'view' | 'download') {
+    const cf = (request as Request & { cf?: { country?: string; city?: string } }).cf;
+    const referrer = request.headers.get('Referer');
+    let referrerHost: string | null = null;
+
+    try {
+        referrerHost = referrer ? new URL(referrer).hostname : null;
+    } catch {
+        referrerHost = null;
+    }
+
+    return { kind, country: cf?.country ?? null, city: cf?.city ?? null, referrer: referrerHost, browser: browserName(request.headers.get('User-Agent') ?? '') };
+}
+
+function browserName(agent: string): string | null {
+    const bots = /(bot|crawler|spider|slack|discord|twitter|facebook|whatsapp|telegram|preview)/i.exec(agent);
+
+    if (bots) {
+        return `${bots[1][0].toUpperCase()}${bots[1].slice(1).toLowerCase()} preview`;
+    }
+
+    const browsers: [RegExp, string][] = [[/Edg\//, 'Edge'], [/OPR\//, 'Opera'], [/Firefox\//, 'Firefox'], [/Chrome\//, 'Chrome'], [/Safari\//, 'Safari'], [/curl\//, 'curl']];
+    const browser = browsers.find(([pattern]) => pattern.test(agent))?.[1] ?? null;
+    const os = /iPhone|iPad/.test(agent) ? 'iOS' : /Android/.test(agent) ? 'Android' : /Mac OS X/.test(agent) ? 'macOS' : /Windows/.test(agent) ? 'Windows' : /Linux/.test(agent) ? 'Linux' : null;
+
+    return [browser, os].filter(Boolean).join(' on ') || null;
 }
 
 function shortId(length = 8): string {

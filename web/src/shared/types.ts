@@ -19,6 +19,22 @@ export interface Drop {
     boards: Board[];
     pageUrl: string;
     directUrl: string;
+    cta: Cta | null;
+}
+
+export interface Cta {
+    label: string;
+    url: string;
+}
+
+export interface Activity {
+    id: number;
+    kind: 'view' | 'download';
+    viewedAt: number;
+    country: string | null;
+    city: string | null;
+    referrer: string | null;
+    browser: string | null;
 }
 
 export interface Board {
@@ -34,6 +50,7 @@ export interface DropUpdate {
     expiresAt?: number | null;
     allowDownload?: boolean;
     tags?: string[];
+    cta?: Cta | null;
 }
 
 export interface DropQuery {

@@ -41,7 +41,7 @@ footer { padding: 12px 20px; color: var(--muted); font-size: 13px; text-align: c
 @media (max-width: 600px) { header { padding: 10px 16px; } .button span { display: none; } }
 `;
 
-function layout(options: { title: string; head?: string; header?: string; body: string; footer?: string }): string {
+function layout(options: { title: string; head?: string; header?: string; actions?: string; body: string; footer?: string }): string {
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -53,7 +53,7 @@ ${options.head ?? ''}
 <style>${styles}</style>
 </head>
 <body>
-<header><a class="brand" href="/">Dropshot</a><div class="title">${options.header ?? ''}</div></header>
+<header><a class="brand" href="/">Dropshot</a><div class="title">${options.header ?? ''}</div>${options.actions ?? ''}</header>
 <main>${options.body}</main>
 ${options.footer ? `<footer>${options.footer}</footer>` : ''}
 </body>
@@ -68,12 +68,17 @@ export function dropPage(row: DropRow, origin: string, text: string | null): str
         ? `<a class="button primary" href="${escape(directPath)}?download=1" download><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg><span>Download</span></a>`
         : '';
 
+    const cta = row.cta_label && row.cta_url
+        ? `<a class="button" href="${escape(row.cta_url)}" target="_blank" rel="noopener">${escape(row.cta_label)}</a>`
+        : '';
+
     const footer = [formatBytes(row.size), new Date(row.created_at).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' }), `${row.views + 1} views`].join(' · ');
 
     return layout({
         title: row.title,
         head: openGraph(row, directUrl, `${origin}/${row.id}`),
         header: `<span>${escape(row.title)}</span>`,
+        actions: cta,
         body: `<div class="viewer">${viewer(row, directPath, text)}</div>`,
         footer: `${footer}${download ? `&nbsp;&nbsp;${download}` : ''}`,
     });

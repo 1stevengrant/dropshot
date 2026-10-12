@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ChevronLeft, Clock, Copy, Download, Ellipsis, ExternalLink, Eye, FolderPlus, Globe, KeyRound, Link2, Lock, Tag, Trash2, X,
+    ChevronLeft, Clock, Code, Copy, Download, Ellipsis, ExternalLink, Eye, FolderPlus, Globe, Image as ImageIcon, KeyRound, Link2, Lock, Pencil, Tag, Trash2, X,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { Drop, DropUpdate, Privacy } from '../shared/types';
+import type { Activity, Drop, DropUpdate, Privacy } from '../shared/types';
 import { api, previewUrl } from './api';
 import { copy, formatBytes, formatDate, formatExpiry } from './format';
+import { MarkupEditor } from './MarkupEditor';
 import { Menu, MenuHeading, MenuItem } from './Menu';
 import { useToast } from './Toasts';
 
@@ -52,6 +53,30 @@ function DropView({ drop }: { drop: Drop }) {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const toast = useToast();
+    const [marking, setMarking] = useState(false);
+    const [version, setVersion] = useState(0);
+
+    async function saveMarkup(image: Blob, mode: 'copy' | 'replace') {
+        const filename = `${drop.title.replace(/[/\\]/g, '-')}${mode === 'copy' ? ' (markup)' : ''}.png`;
+
+        if (mode === 'replace') {
+            const updated = await api.replaceFile(drop.id, image, filename);
+            queryClient.setQueryData(['drop', drop.id], updated);
+            queryClient.invalidateQueries({ queryKey: ['drops'] });
+            setVersion((value) => value + 1);
+            setMarking(false);
+            toast('Markup saved over the original');
+
+            return;
+        }
+
+        const created = await api.upload(image, filename, `${drop.title} (markup)`);
+        await copy(created.pageUrl).catch(() => {});
+        queryClient.invalidateQueries({ queryKey: ['drops'] });
+        setMarking(false);
+        toast('Saved as a new drop. Link copied.');
+        navigate(`/d/${created.id}`);
+    }
 
     const update = useMutation({
         mutationFn: (changes: DropUpdate) => api.update(drop.id, changes),
@@ -89,6 +114,11 @@ function DropView({ drop }: { drop: Drop }) {
                 <a href={`${previewUrl(drop)}?download=1`} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-canvas">
                     <Download size={16} /> <span className="hidden sm:inline">Download</span>
                 </a>
+                {drop.kind === 'image' && !drop.contentType.includes('gif') && (
+                    <button type="button" onClick={() => setMarking(true)} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-canvas">
+                        <Pencil size={16} /> <span className="hidden sm:inline">Markup</span>
+                    </button>
+                )}
                 <button type="button" onClick={confirmDelete} className="flex items-center gap-2 rounded-lg bg-danger px-3 py-1.5 text-sm font-medium text-white">
                     <Trash2 size={16} /> <span className="hidden sm:inline">Delete</span>
                 </button>
@@ -96,16 +126,18 @@ function DropView({ drop }: { drop: Drop }) {
 
             <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
                 <main className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-6">
-                    <Preview drop={drop} />
+                    <Preview drop={drop} version={version} />
                 </main>
                 <InfoPanel drop={drop} onChange={(changes) => update.mutate(changes)} onDelete={confirmDelete} />
             </div>
+
+            {marking && <MarkupEditor src={`${previewUrl(drop)}?v=${version}`} title={drop.title} onCancel={() => setMarking(false)} onSave={saveMarkup} />}
         </div>
     );
 }
 
-function Preview({ drop }: { drop: Drop }) {
-    const src = previewUrl(drop);
+function Preview({ drop, version }: { drop: Drop; version: number }) {
+    const src = version ? `${previewUrl(drop)}?v=${version}` : previewUrl(drop);
     const text = useQuery({ queryKey: ['text', drop.id], queryFn: async () => (await fetch(src)).text(), enabled: drop.kind === 'text' });
 
     switch (drop.kind) {
@@ -148,6 +180,8 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
     const [password, setPassword] = useState<string | null>(null);
     const [customExpiry, setCustomExpiry] = useState<string | null>(null);
     const [tagInput, setTagInput] = useState('');
+    const [tab, setTab] = useState<'activity' | 'info'>('info');
+    const [ctaDraft, setCtaDraft] = useState<{ label: string; url: string } | null>(null);
 
     function saveTitle() {
         if (title.trim() && title !== drop.title) {
@@ -200,6 +234,23 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
 
     return (
         <aside className="w-full shrink-0 overflow-y-auto border-t border-line bg-panel lg:w-96 lg:border-t-0 lg:border-l">
+            <div className="grid grid-cols-2 border-b border-line text-sm" role="tablist">
+                {(['activity', 'info'] as const).map((value) => (
+                    <button
+                        key={value}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === value}
+                        onClick={() => setTab(value)}
+                        className={`border-b-2 py-3.5 ${tab === value ? 'border-accent font-medium text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+                    >
+                        {value === 'activity' ? 'Activities' : 'File info'}
+                    </button>
+                ))}
+            </div>
+
+            {tab === 'activity' ? <ActivityList drop={drop} /> : (
+            <>
             <section className="border-b border-line px-6 py-6 text-center">
                 <input
                     value={title}
@@ -214,6 +265,26 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                     <CircleButton title="Copy link" onClick={async () => { await copy(drop.pageUrl); toast('Link copied'); }}>
                         <Link2 size={18} />
                     </CircleButton>
+
+                    <Menu
+                        label="Embed"
+                        trigger={({ toggle }) => (
+                            <CircleButton title="Copy embed code" onClick={toggle}>
+                                {drop.kind === 'image' ? <ImageIcon size={18} /> : <Code size={18} />}
+                            </CircleButton>
+                        )}
+                    >
+                        {(close) => (
+                            <>
+                                <MenuHeading>Copy as</MenuHeading>
+                                {embedFormats(drop).map((format) => (
+                                    <MenuItem key={format.label} onSelect={async () => { await copy(format.value); toast(`${format.label} copied`); close(); }}>
+                                        {format.label}
+                                    </MenuItem>
+                                ))}
+                            </>
+                        )}
+                    </Menu>
 
                     <Menu
                         label="Drop privacy"
@@ -279,8 +350,8 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                                 <MenuItem onSelect={async () => { await copy(drop.directUrl); toast('Direct link copied'); close(); }}>
                                     <Copy size={15} /> Copy direct link
                                 </MenuItem>
-                                <MenuItem onSelect={() => { window.open(drop.pageUrl, '_blank'); close(); }}>
-                                    <ExternalLink size={15} /> Open drop page
+                                <MenuItem onSelect={() => { window.open(`${drop.pageUrl}?preview`, '_blank'); close(); }}>
+                                    <ExternalLink size={15} /> View as visitor
                                 </MenuItem>
                                 <MenuItem onSelect={() => { window.location.href = `${previewUrl(drop)}?download=1`; close(); }}>
                                     <Download size={15} /> Download
@@ -349,6 +420,41 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                 <p className="mt-1 text-xs text-muted">When off, the drop page has no download button and direct downloads are refused.</p>
             </Section>
 
+            <section className="border-b border-line px-6 py-5">
+                <div className="mb-3 flex items-center justify-between">
+                    <h2 className="font-semibold">CTAs</h2>
+                    {!drop.cta && ctaDraft === null && (
+                        <button type="button" onClick={() => setCtaDraft({ label: '', url: '' })} className="text-sm text-accent hover:underline">Add CTA</button>
+                    )}
+                </div>
+                {ctaDraft !== null ? (
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            onChange({ cta: ctaDraft });
+                            setCtaDraft(null);
+                        }}
+                        className="flex flex-col gap-2"
+                    >
+                        <input value={ctaDraft.label} onChange={(event) => setCtaDraft({ ...ctaDraft, label: event.target.value })} placeholder="Button label, e.g. Book a call" className="rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm outline-none focus:border-accent" />
+                        <input type="url" required value={ctaDraft.url} onChange={(event) => setCtaDraft({ ...ctaDraft, url: event.target.value })} placeholder="https://" className="rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm outline-none focus:border-accent" />
+                        <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => setCtaDraft(null)} className="rounded-lg px-3 py-1.5 text-sm text-muted">Cancel</button>
+                            <button type="submit" className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white">Save</button>
+                        </div>
+                    </form>
+                ) : drop.cta ? (
+                    <div className="flex items-center gap-3 text-sm">
+                        <span className="rounded-lg border border-line px-3 py-1.5 font-medium">{drop.cta.label}</span>
+                        <span className="min-w-0 flex-1 truncate text-muted">{drop.cta.url}</span>
+                        <button type="button" onClick={() => setCtaDraft({ label: drop.cta!.label, url: drop.cta!.url })} className="text-accent hover:underline">Edit</button>
+                        <button type="button" onClick={() => onChange({ cta: null })} title="Remove CTA" className="text-muted hover:text-danger"><X size={15} /></button>
+                    </div>
+                ) : (
+                    <p className="text-center text-sm text-muted">No CTAs added. A CTA shows a button on the public drop page.</p>
+                )}
+            </section>
+
             <Section title="File details">
                 <dl className="grid grid-cols-[6rem_1fr] gap-x-3 gap-y-3 text-sm">
                     <dt className="text-muted">Size</dt>
@@ -416,7 +522,61 @@ function InfoPanel({ drop, onChange, onDelete }: { drop: Drop; onChange: (change
                     </div>
                 </div>
             </Section>
+            </>
+            )}
         </aside>
+    );
+}
+
+function embedFormats(drop: Drop): { label: string; value: string }[] {
+    const formats = [{ label: 'Share link', value: drop.pageUrl }, { label: 'Direct link', value: drop.directUrl }];
+
+    if (drop.kind === 'image') {
+        return [
+            ...formats,
+            { label: 'Markdown', value: `![${drop.title}](${drop.directUrl})` },
+            { label: 'HTML', value: `<a href="${drop.pageUrl}"><img src="${drop.directUrl}" alt="${drop.title.replace(/"/g, '&quot;')}"></a>` },
+            { label: 'BBCode', value: `[url=${drop.pageUrl}][img]${drop.directUrl}[/img][/url]` },
+        ];
+    }
+
+    return [
+        ...formats,
+        { label: 'Markdown', value: `[${drop.title}](${drop.pageUrl})` },
+        { label: 'HTML', value: `<a href="${drop.pageUrl}">${drop.title.replace(/</g, '&lt;')}</a>` },
+        { label: 'BBCode', value: `[url=${drop.pageUrl}]${drop.title}[/url]` },
+    ];
+}
+
+function ActivityList({ drop }: { drop: Drop }) {
+    const activity = useQuery({ queryKey: ['activity', drop.id], queryFn: () => api.activity(drop.id) });
+    const items: (Activity | { id: 'created'; kind: 'created'; viewedAt: number })[] = [...(activity.data ?? []), { id: 'created', kind: 'created', viewedAt: drop.createdAt }];
+
+    return (
+        <section className="px-6 py-5">
+            <p className="mb-4 text-sm text-muted">
+                {drop.views} view{drop.views === 1 ? '' : 's'} in total{drop.tags.includes('droplr') ? ', including views on Droplr' : ''}. Individual visits are logged from 12 Oct 2026 onwards, and your own visits aren’t counted.
+            </p>
+            {activity.isPending && <p className="text-sm text-muted">Loading…</p>}
+            <ol className="flex flex-col gap-4">
+                {items.map((item) => (
+                    <li key={item.id} className="flex gap-3 text-sm">
+                        <span className="mt-0.5 text-muted">{item.kind === 'download' ? <Download size={15} /> : item.kind === 'created' ? <Clock size={15} /> : <Eye size={15} />}</span>
+                        <div className="min-w-0">
+                            <div className="font-medium">
+                                {item.kind === 'created' ? 'Drop created' : item.kind === 'download' ? 'Downloaded' : 'Viewed'}
+                                {'country' in item && item.country && <span className="font-normal text-muted"> from {[item.city, item.country].filter(Boolean).join(', ')}</span>}
+                            </div>
+                            <div className="text-xs text-muted">
+                                {formatDate(item.viewedAt)}
+                                {'browser' in item && item.browser && ` · ${item.browser}`}
+                                {'referrer' in item && item.referrer && ` · via ${item.referrer}`}
+                            </div>
+                        </div>
+                    </li>
+                ))}
+            </ol>
+        </section>
     );
 }
 

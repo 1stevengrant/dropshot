@@ -1,4 +1,4 @@
-import type { Board, Drop, DropKind, DropPage, DropQuery, DropUpdate, Privacy } from '../shared/types';
+import type { Activity, Board, Drop, DropKind, DropPage, DropQuery, DropUpdate, Privacy } from '../shared/types';
 import { automaticTags, contentTypeFor, kindFor, normalizeTag, titleFor } from './kinds';
 import { hashPassword } from './password';
 
@@ -10,6 +10,7 @@ export interface Env {
     ACCESS_AUD: string;
     KEY_PREFIX: string;
     DEV_OWNER?: string;
+    OWNER_COOKIE_SECRET?: string;
 }
 
 export interface DropRow {
@@ -27,6 +28,16 @@ export interface DropRow {
     allow_download: number;
     views: number;
     target_url: string | null;
+    cta_label: string | null;
+    cta_url: string | null;
+}
+
+export interface Visit {
+    kind: 'view' | 'download';
+    country: string | null;
+    city: string | null;
+    referrer: string | null;
+    browser: string | null;
 }
 
 let inflightSync: Promise<number> | null = null;
@@ -226,6 +237,13 @@ export class Drops {
             bindings.push(update.expiresAt);
         }
 
+        if (update.cta !== undefined) {
+            const url = update.cta?.url?.trim() ?? '';
+            const valid = /^https?:\/\//i.test(url);
+            sets.push('cta_label = ?', 'cta_url = ?');
+            bindings.push(valid ? update.cta!.label.trim().slice(0, 60) || 'Learn more' : null, valid ? url.slice(0, 2000) : null);
+        }
+
         if (update.allowDownload !== undefined) {
             sets.push('allow_download = ?');
             bindings.push(update.allowDownload ? 1 : 0);
@@ -260,6 +278,7 @@ export class Drops {
         await this.env.DB.batch([
             this.env.DB.prepare(`DELETE FROM drop_tags WHERE drop_id IN (${placeholders})`).bind(...ids),
             this.env.DB.prepare(`DELETE FROM board_drops WHERE drop_id IN (${placeholders})`).bind(...ids),
+            this.env.DB.prepare(`DELETE FROM drop_views WHERE drop_id IN (${placeholders})`).bind(...ids),
             this.env.DB.prepare(`DELETE FROM drops WHERE id IN (${placeholders})`).bind(...ids),
         ]);
     }
@@ -275,8 +294,40 @@ export class Drops {
         return ids.length;
     }
 
-    async recordView(id: string): Promise<void> {
-        await this.env.DB.prepare('UPDATE drops SET views = views + 1 WHERE id = ?').bind(id).run();
+    async recordVisit(id: string, visit: Visit): Promise<void> {
+        const statements = [
+            this.env.DB.prepare('INSERT INTO drop_views (drop_id, viewed_at, country, city, referrer, browser, kind) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                .bind(id, Date.now(), visit.country, visit.city, visit.referrer, visit.browser, visit.kind),
+        ];
+
+        if (visit.kind === 'view') {
+            statements.push(this.env.DB.prepare('UPDATE drops SET views = views + 1 WHERE id = ?').bind(id));
+        }
+
+        await this.env.DB.batch(statements);
+    }
+
+    async activity(id: string): Promise<Activity[]> {
+        const rows = await this.env.DB.prepare(
+            'SELECT id, kind, viewed_at, country, city, referrer, browser FROM drop_views WHERE drop_id = ? ORDER BY viewed_at DESC LIMIT 200',
+        ).bind(id).all<{ id: number; kind: 'view' | 'download'; viewed_at: number; country: string | null; city: string | null; referrer: string | null; browser: string | null }>();
+
+        return rows.results.map((row) => ({ id: row.id, kind: row.kind, viewedAt: row.viewed_at, country: row.country, city: row.city, referrer: row.referrer, browser: row.browser }));
+    }
+
+    /** Swaps a drop's file (used when Markup saves over the original). The link stays the same. */
+    async replaceFile(row: DropRow, filename: string, contentType: string, body: ReadableStream): Promise<void> {
+        const prefix = this.env.KEY_PREFIX ? `${this.env.KEY_PREFIX.replace(/\/+$/, '')}/` : '';
+        const key = `${prefix}${row.id}/${filename}`;
+        const object = await this.env.BUCKET.put(key, body, { httpMetadata: { contentType } });
+
+        if (key !== row.object_key) {
+            await this.env.BUCKET.delete(row.object_key);
+        }
+
+        await this.env.DB.prepare('UPDATE drops SET object_key = ?, filename = ?, content_type = ?, size = ? WHERE id = ?')
+            .bind(key, filename, contentType, object.size, row.id)
+            .run();
     }
 
     async tags(): Promise<{ tag: string; count: number }[]> {
@@ -357,6 +408,7 @@ export class Drops {
             boards: boardRows.results.filter((board) => board.drop_id === row.id).map((board) => ({ id: board.id!, name: board.name! })),
             pageUrl: this.pageUrl(row.id),
             directUrl: this.directUrl(row),
+            cta: row.cta_label && row.cta_url ? { label: row.cta_label, url: row.cta_url } : null,
         }));
     }
 }

@@ -1,4 +1,4 @@
-import type { Board, Drop, DropPage, DropQuery, DropUpdate } from '../shared/types';
+import type { Activity, Board, Drop, DropPage, DropQuery, DropUpdate } from '../shared/types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`/api${path}`, {
@@ -29,12 +29,23 @@ export const api = {
     deleteBoard: (id: number) => request<void>(`/boards/${id}`, { method: 'DELETE' }),
     addToBoard: (boardId: number, ids: string[]) => request<void>(`/boards/${boardId}/drops`, { method: 'POST', body: JSON.stringify({ ids }) }),
     removeFromBoard: (boardId: number, dropId: string) => request<void>(`/boards/${boardId}/drops/${dropId}`, { method: 'DELETE' }),
-    upload: (file: File) =>
+    upload: (file: Blob, filename = (file as File).name, title?: string) =>
         request<Drop>('/upload', {
             method: 'POST',
             body: file,
-            headers: { 'X-Filename': encodeURIComponent(file.name), 'Content-Type': file.type || 'application/octet-stream' },
+            headers: {
+                'X-Filename': encodeURIComponent(filename),
+                'Content-Type': file.type || 'application/octet-stream',
+                ...(title ? { 'X-Title': encodeURIComponent(title) } : {}),
+            },
         }),
+    replaceFile: (id: string, file: Blob, filename: string) =>
+        request<Drop>(`/drops/${id}/file`, {
+            method: 'PUT',
+            body: file,
+            headers: { 'X-Filename': encodeURIComponent(filename), 'Content-Type': file.type || 'application/octet-stream' },
+        }),
+    activity: (id: string) => request<Activity[]>(`/drops/${id}/activity`),
 };
 
 /** Owner preview URL: works for private and password-protected drops too. */
