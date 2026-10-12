@@ -199,6 +199,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSWindowDelegate {
             ("Copy as Markdown", #selector(copyMarkdown(_:)), true),
             ("Copy as HTML", #selector(copyHTML(_:)), true),
             ("Open in Browser", #selector(openInBrowser(_:)), true),
+            // The share link shows the owner the management view, where privacy and expiry can be changed later.
+            ("Manage…", #selector(openInBrowser(_:)), true),
             ("Show in Finder", #selector(showInFinder(_:)), drop.localCopy.map { FileManager.default.fileExists(atPath: $0.path) } ?? false),
             ("Remove from History", #selector(removeFromHistory(_:)), true),
         ]

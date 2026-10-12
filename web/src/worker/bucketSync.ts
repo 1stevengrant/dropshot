@@ -1,6 +1,7 @@
 import { contentTypeFor, kindFor } from './kinds';
 import type { Drops } from './drops';
 import type { Env } from './types';
+import { parseUploadSettings } from './uploads/uploadSettings';
 import { parseHttpUrl } from './urls/parseHttpUrl';
 
 let inflightSync: Promise<number> | null = null;
@@ -106,6 +107,8 @@ export class BucketSync {
         if (title) {
             await this.drops.update(id, { title });
         }
+
+        await this.drops.applyUploadSettings(id, parseUploadSettings((name) => this.metadata(object, name)));
 
         return true;
     }

@@ -90,6 +90,10 @@ final class Preferences {
     var playSounds: Bool { didSet { defaults.set(playSounds, forKey: Keys.playSounds) } }
     var showNotifications: Bool { didSet { defaults.set(showNotifications, forKey: Keys.showNotifications) } }
     var keepLocalCopies: Bool { didSet { defaults.set(keepLocalCopies, forKey: Keys.keepLocalCopies) } }
+    var defaultPrivacy: DropPrivacy { didSet { defaults.set(defaultPrivacy.rawValue, forKey: Keys.defaultPrivacy) } }
+    var defaultSelfDestruct: SelfDestruct { didSet { defaults.set(defaultSelfDestruct.rawValue, forKey: Keys.defaultSelfDestruct) } }
+    var defaultAllowDownload: Bool { didSet { defaults.set(defaultAllowDownload, forKey: Keys.defaultAllowDownload) } }
+    var dropPassword: String { didSet { Keychain.write(dropPassword, for: Keys.dropPassword) } }
 
     private init() {
         defaults.register(defaults: [
@@ -103,6 +107,9 @@ final class Preferences {
             Keys.playSounds: true,
             Keys.showNotifications: true,
             Keys.keepLocalCopies: true,
+            Keys.defaultPrivacy: DropPrivacy.public.rawValue,
+            Keys.defaultSelfDestruct: SelfDestruct.keep.rawValue,
+            Keys.defaultAllowDownload: true,
         ])
 
         endpoint = defaults.string(forKey: Keys.endpoint) ?? ""
@@ -121,6 +128,14 @@ final class Preferences {
         playSounds = defaults.bool(forKey: Keys.playSounds)
         showNotifications = defaults.bool(forKey: Keys.showNotifications)
         keepLocalCopies = defaults.bool(forKey: Keys.keepLocalCopies)
+        defaultPrivacy = DropPrivacy(rawValue: defaults.string(forKey: Keys.defaultPrivacy) ?? "") ?? .public
+        defaultSelfDestruct = SelfDestruct(rawValue: defaults.string(forKey: Keys.defaultSelfDestruct) ?? "") ?? .keep
+        defaultAllowDownload = defaults.bool(forKey: Keys.defaultAllowDownload)
+        dropPassword = Keychain.read(Keys.dropPassword) ?? ""
+    }
+
+    var dropSettings: DropSettings {
+        DropSettings(privacy: defaultPrivacy, password: dropPassword, selfDestruct: defaultSelfDestruct, allowDownload: defaultAllowDownload)
     }
 
     var storageConfiguration: StorageConfiguration? {
@@ -154,5 +169,9 @@ final class Preferences {
         static let playSounds = "general.playSounds"
         static let showNotifications = "general.showNotifications"
         static let keepLocalCopies = "general.keepLocalCopies"
+        static let defaultPrivacy = "drops.privacy"
+        static let defaultSelfDestruct = "drops.selfDestruct"
+        static let defaultAllowDownload = "drops.allowDownload"
+        static let dropPassword = "drops.password"
     }
 }

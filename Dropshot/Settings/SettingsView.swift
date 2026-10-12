@@ -40,6 +40,32 @@ private struct GeneralSettings: View {
                 Text("Keep screenshots and recordings after upload")
                 Text("Off deletes Dropshot's own captures once they upload. Files you upload from elsewhere are never deleted.")
             }
+
+            Section {
+                Picker("Privacy", selection: $preferences.defaultPrivacy) {
+                    ForEach(DropPrivacy.allCases) { Text($0.title).tag($0) }
+                }
+
+                if preferences.defaultPrivacy == .password {
+                    SecureField("Password", text: $preferences.dropPassword)
+
+                    if !DropSettings.isValidPassword(preferences.dropPassword) {
+                        Text("Passwords are 4 to 32 characters. Until one is set, new drops are public.")
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Picker("Self destruct", selection: $preferences.defaultSelfDestruct) {
+                    ForEach(SelfDestruct.allCases) { Text($0.title).tag($0) }
+                }
+
+                Toggle("Allow downloads", isOn: $preferences.defaultAllowDownload)
+            } header: {
+                Text("Drops")
+            } footer: {
+                Text("Applied to every new upload. The password is stored in your Keychain and only its hash is uploaded.")
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }

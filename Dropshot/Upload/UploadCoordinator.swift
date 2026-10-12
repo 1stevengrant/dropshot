@@ -116,7 +116,8 @@ final class UploadCoordinator {
         }
     }
 
-    /// `metadata` is stored on the object as `x-amz-meta-*`; the Worker's bucket sync reads `source-url` and `title`.
+    /// `metadata` is stored on the object as `x-amz-meta-*`; the Worker's bucket sync reads `source-url` and `title`,
+    /// plus the privacy, expiry and download settings added here.
     func upload(fileAt fileURL: URL, kind: DropKind, metadata: [String: String] = [:]) async {
         guard let configuration = preferences.storageConfiguration else {
             report(UploadError.notConfigured)
@@ -149,7 +150,13 @@ final class UploadCoordinator {
         let uploadedName = configuration.linkStyle == .shortId ? Self.shortName(for: filename, shortId: shortId) : filename
 
         do {
-            let result = try await uploader.upload(fileAt: prepared, filename: uploadedName, shortId: configuration.linkStyle == .shortId ? "" : shortId, metadata: metadata)
+            let settings = preferences.dropSettings.metadata()
+            let result = try await uploader.upload(
+                fileAt: prepared,
+                filename: uploadedName,
+                shortId: configuration.linkStyle == .shortId ? "" : shortId,
+                metadata: metadata.merging(settings) { existing, _ in existing }
+            )
             let size = (try? prepared.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
             let discardLocal = kind == .link || (!preferences.keepLocalCopies && Self.isCapture(prepared))
 
