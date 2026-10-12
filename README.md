@@ -39,10 +39,10 @@ You can also drop files or text on the menu bar icon, or use Upload with Dropsho
 
 Under General › Drops you choose the privacy (public, password or private), self destruct time and download permission for new drops. They are sent as object metadata and applied by the Worker when it registers the drop. Passwords are hashed on the Mac (the plaintext stays in your Keychain), and a password drop without a valid hash is registered as private.
 
-The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, pixelate and step number tools, with undo and redo. You can upload, copy or save the result.
+The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, pixelate, step number and emoji stamp tools, with undo and redo. You can upload, copy or save the result.
 
 Automation URLs: `dropshot://screenshot`, `annotate`, `record`, `gif`, `stop`, `clipboard`, `note`, and `upload?path=/absolute/file`.
 
 ## Not yet built
 
-Droplr features left out of this version: recording countdown, pause and mute, camera bubble, per app plugins, and emoji stamps.
+Droplr features left out of this version: recording countdown, pause and mute, camera bubble, and per app plugins.
