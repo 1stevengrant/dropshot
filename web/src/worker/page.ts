@@ -17,8 +17,8 @@ export function formatBytes(bytes: number): string {
 }
 
 const styles = `
-:root { --bg: #f6f7f9; --panel: #fff; --text: #16181d; --muted: #6b7280; --border: #e4e7ec; --accent: #3b6ef5; --accent-text: #fff; }
-@media (prefers-color-scheme: dark) { :root { --bg: #0f1115; --panel: #171a21; --text: #e9ebf0; --muted: #9aa1ad; --border: #262a33; --accent: #6d93ff; --accent-text: #0f1115; } }
+:root { --bg: #f6f7f9; --panel: #fff; --text: #16181d; --muted: #6b7280; --border: #e4e7ec; --accent: #3b6ef5; --accent-text: #fff; --hover: #eef1f5; --hover-border: #cfd5de; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f1115; --panel: #171a21; --text: #e9ebf0; --muted: #9aa1ad; --border: #262a33; --accent: #6d93ff; --accent-text: #0f1115; --hover: #1f232c; --hover-border: #363b46; } }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
 header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border); }
@@ -26,6 +26,13 @@ header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; back
 .title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 .button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text); text-decoration: none; font: inherit; font-weight: 500; cursor: pointer; }
 .button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.button { transition: background-color 120ms, border-color 120ms, filter 120ms, transform 60ms; }
+.button:hover { background: var(--hover); border-color: var(--hover-border); }
+.button.primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); }
+.button:active { transform: translateY(1px); }
+.button:focus-visible, .brand:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.brand:hover { opacity: 0.8; }
+a, button { cursor: pointer; }
 main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
 .viewer { max-width: min(1400px, 100%); width: 100%; display: flex; justify-content: center; }
 .viewer img, .viewer video { max-width: 100%; max-height: calc(100vh - 170px); border-radius: 8px; box-shadow: 0 4px 24px rgb(0 0 0 / 0.12); background: var(--panel); }
