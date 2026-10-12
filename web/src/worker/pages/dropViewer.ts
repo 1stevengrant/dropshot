@@ -18,6 +18,10 @@ export function dropViewer(row: DropRow, src: string, text: string | null): stri
         case 'pdf':
             return `<iframe class="h-[calc(100vh-10rem)] w-full rounded-box border border-base-300 bg-white" src="${url}" title="${escape(row.title)}"></iframe>`;
         case 'text':
+            if (text === null) {
+                return fileCard(row, url);
+            }
+
             return `<div class="card w-full max-w-3xl border border-base-300 bg-base-100 shadow-sm"><pre class="card-body overflow-auto font-mono text-sm leading-relaxed whitespace-pre-wrap break-words">${escape(text ?? '')}</pre></div>`;
         case 'code':
             if (text !== null) {

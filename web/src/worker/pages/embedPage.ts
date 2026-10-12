@@ -22,7 +22,7 @@ export function embedPage(row: DropRow, origin: string, text: string | null): st
         file: `<a class="flex h-full flex-col items-center justify-center gap-2" href="${pageUrl}" target="_blank" rel="noopener"><span class="text-4xl" aria-hidden="true">📄</span><span class="link link-hover">${escape(row.filename)}</span></a>`,
     };
 
-    const body = row.kind === 'code' && text === null ? bodies.file : bodies[row.kind];
+    const body = (row.kind === 'code' || row.kind === 'text') && text === null ? bodies.file : bodies[row.kind];
 
     return htmlDocument({ title: row.title, bodyClass: 'h-screen overflow-hidden bg-transparent text-base-content', body });
 }
