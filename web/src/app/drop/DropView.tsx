@@ -2,10 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Drop, DropUpdate } from '../../shared/types';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast/useToast';
 import { api, previewUrl } from '../lib/api';
+import { setFlash } from '../lib/flash';
 import { copy } from '../lib/format';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { libraryLocation } from '../lib/libraryLocation';
 import { MarkupEditor } from '../markup/MarkupEditor';
 import { DropHeader } from './DropHeader';
 import { DropPreview } from './DropPreview';
@@ -54,9 +56,8 @@ export function DropView({ drop }: { drop: Drop }) {
     const remove = useMutation({
         mutationFn: () => api.remove([drop.id]),
         onSuccess: () => {
-            queryClient.invalidateQueries();
-            toast('Drop deleted');
-            navigate('/');
+            setFlash('Drop deleted');
+            window.location.assign(libraryLocation());
         },
     });
 

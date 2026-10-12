@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type DragEvent, useDeferredValue, useRef, useState } from 'react';
+import { type DragEvent, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import type { DropKind, DropQuery } from '../../shared/types';
 import { useToast } from '../components/Toast/useToast';
 import { api } from '../lib/api';
+import { rememberLibraryLocation } from '../lib/libraryLocation';
 import { DropGrid } from './DropGrid';
 import { DropOverlay } from './DropOverlay';
 import { DropTable } from './DropTable';
@@ -123,6 +124,21 @@ export function Library() {
 
     const items = drops.data?.drops ?? [];
     const pageCount = drops.data ? Math.max(1, Math.ceil(drops.data.total / drops.data.perPage)) : 1;
+    const page = query.page ?? 1;
+
+    // Kept in session storage so leaving a drop (back, delete) returns to this exact view.
+    useEffect(() => {
+        rememberLibraryLocation(params.toString(), deferredSearch);
+    }, [params, deferredSearch]);
+
+    // Deleting the last drops on the final page would leave you on an empty page; step back to the last real one.
+    useEffect(() => {
+        if (drops.data && !drops.isPlaceholderData && page > pageCount) {
+            const next = new URLSearchParams(params);
+            pageCount > 1 ? next.set('page', String(pageCount)) : next.delete('page');
+            setParams(next, { replace: true });
+        }
+    }, [drops.data, drops.isPlaceholderData, page, pageCount, params, setParams]);
 
     function goToPage(page: number) {
         const next = new URLSearchParams(params);
