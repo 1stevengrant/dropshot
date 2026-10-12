@@ -1,0 +1,33 @@
+{
+  "name": "dropshot-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:app": "vite",
+    "build": "vite build",
+    "typecheck": "tsc",
+    "deploy": "vite build && wrangler deploy",
+    "migrate": "wrangler d1 migrations apply dropshot --remote"
+  },
+  "dependencies": {
+    "hono": "^4.13.13"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261011.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-query": "^5.104.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "lucide-react": "^1.55.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "wrangler": "^4.149.0"
+  },
+  "private": true,
+  "type": "module"
+}
