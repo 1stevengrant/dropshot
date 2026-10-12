@@ -23,3 +23,22 @@
         --color-accent-soft: #1d2640;
     }
 }
+
+@layer base {
+    a[href],
+    button:not(:disabled),
+    [role="button"],
+    [role="menuitem"],
+    [role="switch"],
+    select,
+    summary,
+    label:has(input[type="checkbox"]),
+    input[type="checkbox"],
+    input[type="file"] {
+        cursor: pointer;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+    }
+}
