@@ -36,6 +36,10 @@ private struct GeneralSettings: View {
 
             Toggle("Play sounds", isOn: $preferences.playSounds)
             Toggle("Show a notification when the link is copied", isOn: $preferences.showNotifications)
+            Toggle(isOn: $preferences.instantLinks) {
+                Text("Copy the link as soon as an upload starts")
+                Text("Anyone who opens it before the upload finishes sees a page that refreshes until the drop is ready.")
+            }
             Toggle(isOn: $preferences.keepLocalCopies) {
                 Text("Keep screenshots and recordings after upload")
                 Text("Off deletes Dropshot's own captures once they upload. Files you upload from elsewhere are never deleted.")

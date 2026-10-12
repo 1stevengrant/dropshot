@@ -148,6 +148,14 @@ final class UploadCoordinator {
 
         let shortId = S3Uploader.makeShortId()
         let uploadedName = configuration.linkStyle == .shortId ? Self.shortName(for: filename, shortId: shortId) : filename
+        let link = configuration.publicBaseURL.appending(path: shortId)
+        let instantLink = preferences.instantLinks
+
+        if instantLink {
+            // The ID is chosen before any bytes are sent, so the link can be shared while the upload runs.
+            copyLink(link, identifier: shortId)
+            try? await uploader.uploadPendingMarker(dropId: shortId, filename: filename)
+        }
 
         do {
             let settings = preferences.dropSettings.metadata()
@@ -157,6 +165,11 @@ final class UploadCoordinator {
                 shortId: configuration.linkStyle == .shortId ? "" : shortId,
                 metadata: metadata.merging(settings) { existing, _ in existing }
             )
+
+            if instantLink {
+                try? await uploader.deletePendingMarker(dropId: shortId)
+            }
+
             let size = (try? prepared.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
             let discardLocal = kind == .link || (!preferences.keepLocalCopies && Self.isCapture(prepared))
 
@@ -164,7 +177,7 @@ final class UploadCoordinator {
                 id: shortId,
                 filename: filename,
                 kind: kind,
-                url: configuration.publicBaseURL.appending(path: shortId),
+                url: link,
                 directURL: result.directURL,
                 objectKey: result.objectKey,
                 byteCount: size,
@@ -173,7 +186,7 @@ final class UploadCoordinator {
             )
 
             store.add(drop)
-            complete(drop)
+            complete(drop, linkCopied: instantLink)
 
             if kind == .image, let thumbnail = Thumbnailer.thumbnail(ofImageAt: prepared) {
                 // Optional: without it the dashboard card shows an icon (or the original, when that's small).
@@ -184,7 +197,14 @@ final class UploadCoordinator {
                 try? FileManager.default.removeItem(at: prepared)
             }
         } catch {
-            report(error)
+            guard instantLink else {
+                report(error)
+
+                return
+            }
+
+            try? await uploader.deletePendingMarker(dropId: shortId)
+            report(error, detail: "The link that was copied won't work.")
         }
     }
 
@@ -255,26 +275,34 @@ final class UploadCoordinator {
         return archive
     }
 
-    private func complete(_ drop: Drop) {
+    private func copyLink(_ link: URL, identifier: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(drop.url.absoluteString, forType: .string)
+        pasteboard.setString(link.absoluteString, forType: .string)
+
+        if preferences.showNotifications {
+            Notifier.post(title: "Link copied", body: link.absoluteString, identifier: identifier)
+        }
+    }
+
+    /// With instant links the link was copied when the upload started; the clipboard may hold something newer by now.
+    private func complete(_ drop: Drop, linkCopied: Bool) {
+        if !linkCopied {
+            copyLink(drop.url, identifier: drop.id)
+        }
 
         if preferences.playSounds {
             NSSound(named: "Glass")?.play()
         }
-
-        if preferences.showNotifications {
-            Notifier.post(title: "Link copied", body: drop.url.absoluteString, identifier: drop.id)
-        }
     }
 
-    func report(_ error: Error) {
+    func report(_ error: Error, detail: String? = nil) {
         if preferences.playSounds {
             NSSound(named: "Basso")?.play()
         }
 
-        Notifier.post(title: "Dropshot", body: error.localizedDescription, identifier: UUID().uuidString)
+        let body = [error.localizedDescription, detail].compactMap { $0 }.joined(separator: " ")
+        Notifier.post(title: "Dropshot", body: body, identifier: UUID().uuidString)
     }
 
     static func kind(for url: URL) -> DropKind {

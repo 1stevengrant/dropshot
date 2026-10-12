@@ -82,7 +82,7 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
 
     func upload(fileAt fileURL: URL, filename: String, shortId: String, metadata: [String: String] = [:]) async throws -> UploadResult {
         let objectKey = Self.objectKey(prefix: configuration.keyPrefix, shortId: shortId, filename: filename)
-        let encodedKey = objectKey.split(separator: "/").map { S3Signer.encodePathSegment(String($0)) }.joined(separator: "/")
+        let encodedKey = Self.encodedKey(objectKey)
 
         let signer = S3Signer(accessKeyId: configuration.accessKeyId, secretAccessKey: configuration.secretAccessKey, region: configuration.region)
         let size = Int64((try fileURL.resourceValues(forKeys: [.fileSizeKey])).fileSize ?? 0)
@@ -152,22 +152,59 @@ nonisolated final class S3Uploader: NSObject, URLSessionTaskDelegate, Sendable {
 
     /// Library thumbnails sit at `<prefix>/_thumbs/<id>`; the Worker's bucket sync ignores keys starting with `_`.
     func uploadThumbnail(_ data: Data, contentType: String, dropId: String) async throws {
-        let objectKey = Self.objectKey(prefix: configuration.keyPrefix, shortId: "_thumbs", filename: dropId)
-        let encodedKey = objectKey.split(separator: "/").map { S3Signer.encodePathSegment(String($0)) }.joined(separator: "/")
+        try await put(data, contentType: contentType, objectKey: Self.objectKey(prefix: configuration.keyPrefix, shortId: "_thumbs", filename: dropId))
+    }
+
+    /// While an instant link's upload runs, `<prefix>/_pending/<id>` tells the Worker to show "Still uploading…".
+    func uploadPendingMarker(dropId: String, filename: String) async throws {
+        let marker = try JSONSerialization.data(withJSONObject: ["filename": filename, "startedAt": Int64(Date.now.timeIntervalSince1970 * 1000)])
+
+        try await put(marker, contentType: "application/json", objectKey: Self.pendingMarkerKey(prefix: configuration.keyPrefix, dropId: dropId))
+    }
+
+    func deletePendingMarker(dropId: String) async throws {
+        try await delete(key: Self.pendingMarkerKey(prefix: configuration.keyPrefix, dropId: dropId))
+    }
+
+    func delete(key objectKey: String) async throws {
         let signer = S3Signer(accessKeyId: configuration.accessKeyId, secretAccessKey: configuration.secretAccessKey, region: configuration.region)
 
-        var request = URLRequest(url: objectURL(encodedKey: encodedKey))
+        var request = URLRequest(url: objectURL(encodedKey: Self.encodedKey(objectKey)))
+        request.httpMethod = "DELETE"
+
+        signer.sign(&request, payloadHash: S3Signer.sha256Hex(Data()))
+
+        let (body, response) = try await URLSession.shared.data(for: request)
+        try Self.requireSuccess(response, body: body)
+    }
+
+    private func put(_ data: Data, contentType: String, objectKey: String) async throws {
+        let signer = S3Signer(accessKeyId: configuration.accessKeyId, secretAccessKey: configuration.secretAccessKey, region: configuration.region)
+
+        var request = URLRequest(url: objectURL(encodedKey: Self.encodedKey(objectKey)))
         request.httpMethod = "PUT"
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
 
         signer.sign(&request, payloadHash: S3Signer.sha256Hex(data))
 
         let (body, response) = try await URLSession.shared.upload(for: request, from: data)
+        try Self.requireSuccess(response, body: body)
+    }
+
+    private static func requireSuccess(_ response: URLResponse, body: Data) throws {
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
 
         guard (200..<300).contains(status) else {
             throw UploadError.server(status: status, body: String(decoding: body, as: UTF8.self))
         }
+    }
+
+    private static func encodedKey(_ objectKey: String) -> String {
+        objectKey.split(separator: "/").map { S3Signer.encodePathSegment(String($0)) }.joined(separator: "/")
+    }
+
+    static func pendingMarkerKey(prefix: String, dropId: String) -> String {
+        objectKey(prefix: prefix, shortId: "_pending", filename: dropId)
     }
 
     static func metadataHeaders(_ metadata: [String: String]) -> [String: String] {
