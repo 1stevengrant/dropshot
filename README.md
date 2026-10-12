@@ -34,7 +34,7 @@ On first launch the Settings window opens. Under Storage, enter the endpoint, bu
 | Mute or unmute the microphone (while recording) | ⌥M |
 | Cancel and delete the recording (while recording) | Esc |
 
-Screenshots use the system screencapture tool, so selection is the native macOS one. Recordings use ScreenCaptureKit: drag to record an area, click or press Space to record a window, press Return for the whole screen, or Esc to cancel. A countdown (3 seconds by default, set under Settings › Capture) runs before recording starts. While recording, a control bar next to the area has stop, pause, mute and delete buttons. It never appears in the video. The Dropshot menu offers the same controls. System audio and the microphone are recorded to separate tracks, and paused time is cut from the movie. GIFs record without sound.
+Screenshots use the system screencapture tool, so selection is the native macOS one. Recordings use ScreenCaptureKit: drag to record an area, click or press Space to record a window, press Return for the whole screen, or Esc to cancel. A countdown (3 seconds by default, set under Settings › Capture) runs before recording starts. While recording, a control bar next to the area has stop, pause, mute and delete buttons. It never appears in the video. The Dropshot menu offers the same controls. System audio and the microphone are recorded separately, then mixed into one audio track when the recording finishes, because browsers only play a movie's first audio track. Paused time is cut from the movie. GIFs record without sound.
 
 With Automatically upload macOS screenshots turned on (Settings › Capture), screenshots and recordings you take with ⌘⇧3, ⌘⇧4 or ⌘⇧5 upload as soon as macOS saves them. The originals are left where they are.
 

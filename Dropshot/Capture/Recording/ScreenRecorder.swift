@@ -118,7 +118,7 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
             return nil
         }
 
-        return try await writer.finish()
+        return try await RecordingMixdown.mix(writer.finish())
     }
 
     private func makeStream(for target: RecordingTarget, microphone: String, systemAudio: Bool, showClicks: Bool) async throws -> (SCStream, RecordingWriter) {
