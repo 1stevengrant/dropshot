@@ -26,7 +26,7 @@ export function MoreMenu({ drop, onDelete }: { drop: Drop; onDelete: () => void 
                     <MenuItem onSelect={async () => { await copy(drop.directUrl); toast('Direct link copied'); close(); }}>
                         <Copy size={15} /> Copy direct link
                     </MenuItem>
-                    <MenuItem onSelect={() => { window.open(`${drop.pageUrl}?preview`, '_blank'); close(); }}>
+                    <MenuItem onSelect={() => { window.location.assign(`${drop.pageUrl}?preview`); close(); }}>
                         <ExternalLink size={15} /> View as visitor
                     </MenuItem>
                     <MenuItem onSelect={() => { window.location.href = `${previewUrl(drop)}?download=1`; close(); }}>

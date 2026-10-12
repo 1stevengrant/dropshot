@@ -33,7 +33,7 @@ export function CodeBlock({ cacheKey, text, filename, rawHref }: CodeBlockProps)
                     <button type="button" onClick={copyCode} className="link link-hover inline-flex items-center gap-1">
                         {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
                     </button>
-                    <a href={rawHref} target="_blank" rel="noreferrer" className="link link-hover">Raw</a>
+                    <a href={rawHref} className="link link-hover">Raw</a>
                 </span>
             </div>
             <div className="code-scroll">

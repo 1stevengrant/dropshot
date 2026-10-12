@@ -39,7 +39,7 @@ export function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: b
                 <Link to={`/${drop.id}`} className="truncate font-medium hover:text-accent" title={drop.title}>
                     {drop.title}
                 </Link>
-                <a href={drop.pageUrl} target="_blank" rel="noreferrer" className="truncate text-sm text-accent hover:underline">
+                <a href={drop.pageUrl} className="truncate text-sm text-accent hover:underline">
                     {drop.pageUrl.replace(/^https?:\/\//, '')}
                 </a>
                 <div className="mt-auto flex items-center gap-2 pt-3 text-xs text-muted">
@@ -53,7 +53,7 @@ export function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: b
                     >
                         <Copy size={16} />
                     </button>
-                    <a href={drop.pageUrl} target="_blank" rel="noreferrer" title="Open drop page" className="btn btn-ghost btn-xs btn-square text-primary">
+                    <a href={drop.pageUrl} title="Open drop page" className="btn btn-ghost btn-xs btn-square text-primary">
                         <ExternalLink size={16} />
                     </a>
                 </div>
