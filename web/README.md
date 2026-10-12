@@ -1,12 +1,14 @@
 # Dropshot web
 
-A Cloudflare Worker that serves `d.ghijk.nz`. It shows drop pages, serves files from R2, and hosts the dashboard at `/app`.
+A Cloudflare Worker that serves `d.ghijk.nz`. It shows drop pages, serves files from R2, and hosts the dashboard at the root.
 
 | Path | What it is | Who can see it |
 | --- | --- | --- |
-| `/<id>` | Drop page with a viewer and download button | Depends on the drop's privacy |
-| `/<id>/<filename>` | The raw file, with range support for video | Depends on the drop's privacy |
-| `/app` | Dashboard | Only you, through Cloudflare Access |
+| `/` | Dashboard library, with filters as query strings (`/?tag=note&page=2`) | Only you; signed out visitors go through `/app` |
+| `/<id>` | Drop page; you get the management view at the same address | Depends on the drop's privacy |
+| `/<id>+` and `/<id>/<filename>` | The raw file, with range support for video | Depends on the drop's privacy |
+| `/<id>/embed` | Chrome free page for iframes | Depends on the drop's privacy |
+| `/app` | Cloudflare Access sign in entry; forwards to the same view at `/` | Only you, through Cloudflare Access |
 | `/api` | JSON API used by the dashboard | Only you, through Cloudflare Access |
 
 Drop metadata (titles, tags, boards, privacy, passwords, expiry, views) lives in D1. The Mac app keeps uploading straight to R2; the Worker registers new objects whenever the dashboard loads, when an unknown drop is requested, and hourly from a cron trigger. The same cron deletes expired drops from R2 and D1.

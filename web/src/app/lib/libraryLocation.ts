@@ -11,7 +11,7 @@ export function rememberLibraryLocation(search: string, query: string): void {
     const suffix = params.toString();
 
     try {
-        sessionStorage.setItem(key, suffix ? `/app/?${suffix}` : '/app/');
+        sessionStorage.setItem(key, suffix ? `/?${suffix}` : '/');
     } catch {
         // Private browsing can block storage; the library root is a fine fallback.
     }
@@ -19,8 +19,8 @@ export function rememberLibraryLocation(search: string, query: string): void {
 
 export function libraryLocation(): string {
     try {
-        return sessionStorage.getItem(key) ?? '/app/';
+        return sessionStorage.getItem(key) ?? '/';
     } catch {
-        return '/app/';
+        return '/';
     }
 }

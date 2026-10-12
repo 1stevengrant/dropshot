@@ -5,7 +5,6 @@ import type { Drop, DropUpdate } from '../../shared/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast/useToast';
 import { api, previewUrl } from '../lib/api';
-import { setFlash } from '../lib/flash';
 import { copy } from '../lib/format';
 import { libraryLocation } from '../lib/libraryLocation';
 import { MarkupEditor } from '../markup/MarkupEditor';
@@ -56,8 +55,9 @@ export function DropView({ drop }: { drop: Drop }) {
     const remove = useMutation({
         mutationFn: () => api.remove([drop.id]),
         onSuccess: () => {
-            setFlash('Drop deleted');
-            window.location.assign(libraryLocation());
+            queryClient.invalidateQueries();
+            toast('Drop deleted');
+            navigate(libraryLocation());
         },
     });
 

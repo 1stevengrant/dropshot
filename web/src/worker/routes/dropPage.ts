@@ -1,5 +1,6 @@
 import { isOwnerAnywhere } from '../auth/ownerCookie';
 import { createRouter } from '../app';
+import { appShell } from '../http/appShell';
 import { viewableDrop } from '../http/viewableDrop';
 import { dropPage as renderDropPage } from '../pages/dropPage';
 import { visitFrom } from '../visits/visitFrom';
@@ -18,9 +19,7 @@ dropPage.get('/:id', async (c) => {
     // Like Droplr, the owner gets the management view at the share link itself (the address stays the same);
     // ?preview shows what visitors see.
     if (owner && c.req.query('preview') === undefined) {
-        const shell = await c.env.ASSETS.fetch(new Request(new URL('/app/', c.req.url)));
-
-        return new Response(shell.body, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store' } });
+        return appShell(c);
     }
 
     if (!owner) {

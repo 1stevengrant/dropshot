@@ -1,4 +1,5 @@
 import { Copy, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router';
 import type { Drop } from '../../shared/types';
 import { Thumbnail } from '../components/Thumbnail';
 import { useToast } from '../components/Toast/useToast';
@@ -24,19 +25,19 @@ export function DropCard({ drop, selected, onToggle }: { drop: Drop; selected: b
                 }`}
             />
 
-            <a href={`/${drop.id}`} className="relative block aspect-[4/3] overflow-hidden bg-canvas">
+            <Link to={`/${drop.id}`} className="relative block aspect-[4/3] overflow-hidden bg-canvas">
                 <Thumbnail drop={drop} />
                 {drop.kind === 'video' && (
                     <span className="absolute inset-0 flex items-center justify-center">
                         <span className="flex size-12 items-center justify-center rounded-full bg-black/55 text-white">▶</span>
                     </span>
                 )}
-            </a>
+            </Link>
 
             <div className="flex flex-1 flex-col gap-1 p-4">
-                <a href={`/${drop.id}`} className="truncate font-medium hover:text-accent" title={drop.title}>
+                <Link to={`/${drop.id}`} className="truncate font-medium hover:text-accent" title={drop.title}>
                     {drop.title}
-                </a>
+                </Link>
                 <a href={drop.pageUrl} target="_blank" rel="noreferrer" className="truncate text-sm text-accent hover:underline">
                     {drop.pageUrl.replace(/^https?:\/\//, '')}
                 </a>

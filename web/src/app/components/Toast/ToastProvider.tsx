@@ -1,5 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
-import { takeFlash } from '../../lib/flash';
+import { type ReactNode, useCallback, useState } from 'react';
 import { ToastContext } from './toastContext';
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -10,15 +9,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         setToasts((current) => [...current, { id, message }]);
         setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 2500);
     }, []);
-
-    // Show a message left by the previous page, such as "Drop deleted".
-    useEffect(() => {
-        const message = takeFlash();
-
-        if (message) {
-            show(message);
-        }
-    }, [show]);
 
     return (
         <ToastContext.Provider value={show}>
