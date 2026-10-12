@@ -11,14 +11,14 @@ A Cloudflare Worker that serves `d.ghijk.nz`. It shows drop pages, serves files 
 | `/app` | Cloudflare Access sign in entry; forwards to the same view at `/` | Only you, through Cloudflare Access |
 | `/api` | JSON API used by the dashboard | Only you, through Cloudflare Access |
 
-Drop metadata (titles, tags, boards, privacy, passwords, expiry, views) lives in D1. The Mac app keeps uploading straight to R2; the Worker registers new objects whenever the dashboard loads, when an unknown drop is requested, and hourly from a cron trigger. The same cron deletes expired drops from R2 and D1.
+Drop metadata (titles, tags, boards, privacy, passwords, expiry, views) lives in D1. The Mac app keeps uploading straight to R2; the Worker registers new objects whenever the dashboard loads, when an unknown drop is requested, and every five minutes from a cron trigger. The same cron deletes expired drops from R2 and D1.
 
 ## Privacy rules
 
 * Public: anyone with the link.
 * Password: visitors enter a password once per drop (stored as a PBKDF2 hash, unlocked with a signed cookie).
 * Private: only you, signed in through Access.
-* Self destruct: after the expiry time the drop returns 410 and is deleted within the hour.
+* Self destruct: after the expiry time the drop returns 410 and is deleted within five minutes.
 * Download permission off: no download button, and `?download=1` requests are refused for visitors.
 
 ## Development
