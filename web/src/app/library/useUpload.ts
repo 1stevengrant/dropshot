@@ -53,8 +53,8 @@ export function useUpload(onUploaded: () => void) {
         const uploaded = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
 
         if (uploaded.length === 1) {
-            await copy(uploaded[0].pageUrl);
-            toast('Uploaded. Link copied.');
+            const copied = await copy(uploaded[0].pageUrl).then(() => true, () => false);
+            toast(copied ? 'Uploaded. Link copied.' : 'Uploaded. Copy the link from the library.');
         } else if (uploaded.length) {
             toast(`Uploaded ${uploaded.length} files`);
         }
