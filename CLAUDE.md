@@ -66,7 +66,7 @@ Privacy (public, password, private), self destruct expiry, download permission a
 
 ### Mac app
 
-XcodeGen project with `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor` for the app and `nonisolated` for tests. Captures shell out to `/usr/sbin/screencapture` rather than a custom overlay. Recordings are stopped by posting ⌃⌘Esc (needs Accessibility permission), and a recording that macOS saves to the user's screenshot location is adopted by polling for the file. Storage credentials are kept in the Keychain; other settings in `Settings/Preferences.swift`. The only dependency is KeyboardShortcuts (SPM).
+XcodeGen project with `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor` for the app and `nonisolated` for tests. Screenshots shell out to `/usr/sbin/screencapture` rather than a custom overlay. Recordings use ScreenCaptureKit (`Capture/Recording/`): `RecordingRegionPicker` chooses an area, window or display, `ScreenRecorder` runs the session (idle, countdown, recording, paused, finishing) and `RecordingWriter` writes the stream with `AVAssetWriter`, dropping paused samples and shifting later timestamps by the paused time (`RecordingClock`). The capture filter excludes Dropshot's own windows, so the control bar never appears in a recording. Storage credentials are kept in the Keychain; other settings in `Settings/Preferences.swift`. The only dependency is KeyboardShortcuts (SPM).
 
 ## Conventions
 

@@ -79,7 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// dropshot://screenshot, dropshot://annotate, dropshot://record, dropshot://gif, dropshot://stop,
+    /// dropshot://screenshot, dropshot://annotate, dropshot://record, dropshot://gif, dropshot://stop, dropshot://pause, dropshot://mute,
     /// dropshot://clipboard, dropshot://note, dropshot://code, dropshot://upload?path=/absolute/file,
     /// dropshot://capture-url (asks for a URL) or dropshot://capture-url?url=https://example.com
     private func handle(_ url: URL) {
@@ -104,6 +104,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             actions.startRecording(as: .gif)
         case "stop":
             actions.stopRecording()
+        case "pause":
+            actions.togglePause()
+        case "mute":
+            actions.toggleMute()
         case "clipboard":
             UploadCoordinator.shared.uploadPasteboard()
         case "note":

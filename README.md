@@ -30,8 +30,11 @@ On first launch the Settings window opens. Under Storage, enter the endpoint, bu
 | Upload file | ⌥⇧6 |
 | New note | ⌥⇧N |
 | Finish recording | ⇧⌘D |
+| Pause or resume recording (while recording) | ⌥⇧7 |
+| Mute or unmute the microphone (while recording) | ⌥M |
+| Cancel and delete the recording (while recording) | Esc |
 
-Captures use the system screencapture tool, so selection and the recording toolbar are the native macOS ones. Stop a recording with the stop button in the menu bar, the Dropshot icon, or ⇧⌘D.
+Screenshots use the system screencapture tool, so selection is the native macOS one. Recordings use ScreenCaptureKit: drag to record an area, click or press Space to record a window, press Return for the whole screen, or Esc to cancel. A countdown (3 seconds by default, set under Settings › Capture) runs before recording starts. While recording, a control bar next to the area has stop, pause, mute and delete buttons. It never appears in the video. The Dropshot menu offers the same controls. System audio and the microphone are recorded separately, then mixed into one audio track when the recording finishes, because browsers only play a movie's first audio track. Paused time is cut from the movie. GIFs record without sound.
 
 With Automatically upload macOS screenshots turned on (Settings › Capture), screenshots and recordings you take with ⌘⇧3, ⌘⇧4 or ⌘⇧5 upload as soon as macOS saves them. The originals are left where they are.
 
@@ -41,8 +44,8 @@ Under General › Drops you choose the privacy (public, password or private), se
 
 The annotation editor has arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, pixelate, step number and emoji stamp tools, with undo and redo. You can upload, copy or save the result.
 
-Automation URLs: `dropshot://screenshot`, `annotate`, `record`, `gif`, `stop`, `clipboard`, `note`, and `upload?path=/absolute/file`.
+Automation URLs: `dropshot://screenshot`, `annotate`, `record`, `gif`, `stop`, `pause`, `mute`, `clipboard`, `note`, and `upload?path=/absolute/file`.
 
 ## Not yet built
 
-Droplr features left out of this version: recording countdown, pause and mute, camera bubble, and per app plugins.
+Droplr features left out of this version: camera bubble and per app plugins.

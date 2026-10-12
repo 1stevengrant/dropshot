@@ -169,6 +169,13 @@ private struct CaptureSettings: View {
 
             Toggle("Show clicks in recordings", isOn: $preferences.showClicksInRecordings)
 
+            Picker("Countdown before recording", selection: $preferences.recordingCountdown) {
+                Text("None").tag(0)
+                Text("3 seconds").tag(3)
+                Text("5 seconds").tag(5)
+                Text("10 seconds").tag(10)
+            }
+
             Section("Sound") {
                 Picker("Microphone", selection: $preferences.microphone) {
                     Text("None").tag(MicrophoneChoice.none)
@@ -197,6 +204,9 @@ private struct ShortcutSettings: View {
             KeyboardShortcuts.Recorder("Record video:", name: .recordVideo)
             KeyboardShortcuts.Recorder("Record GIF:", name: .recordGIF)
             KeyboardShortcuts.Recorder("Finish recording:", name: .finishRecording)
+            KeyboardShortcuts.Recorder("Pause or resume recording:", name: .pauseRecording)
+            KeyboardShortcuts.Recorder("Mute or unmute microphone:", name: .muteRecording)
+            KeyboardShortcuts.Recorder("Cancel recording:", name: .cancelRecording)
             KeyboardShortcuts.Recorder("Capture web page:", name: .captureWebPage)
             KeyboardShortcuts.Recorder("Upload file:", name: .uploadFile)
             KeyboardShortcuts.Recorder("New note:", name: .newNote)

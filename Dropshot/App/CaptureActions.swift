@@ -52,7 +52,13 @@ final class CaptureActions {
 
         Task {
             do {
-                guard let movie = try await recorder.record(microphone: preferences.microphone, systemAudio: preferences.recordSystemAudio, showClicks: preferences.showClicksInRecordings) else {
+                // GIFs have no sound, so they record without audio tracks.
+                guard let movie = try await recorder.record(
+                    microphone: format == .gif ? MicrophoneChoice.none : preferences.microphone,
+                    systemAudio: format == .video && preferences.recordSystemAudio,
+                    showClicks: preferences.showClicksInRecordings,
+                    countdown: preferences.recordingCountdown
+                ) else {
                     return
                 }
 
@@ -72,7 +78,19 @@ final class CaptureActions {
     }
 
     func stopRecording() {
-        recorder.stop()
+        recorder.finish()
+    }
+
+    func togglePause() {
+        recorder.togglePause()
+    }
+
+    func toggleMute() {
+        recorder.toggleMute()
+    }
+
+    func cancelRecording() {
+        recorder.cancel()
     }
 
     func chooseFiles() {
