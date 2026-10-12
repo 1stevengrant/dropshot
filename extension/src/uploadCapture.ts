@@ -1,3 +1,4 @@
+import type { StitchedImage } from './TileStitcher';
 import { dropshotUrl } from './config';
 
 export class SignInRequired extends Error {
@@ -6,8 +7,8 @@ export class SignInRequired extends Error {
     }
 }
 
-/** Uploads through the dashboard API, riding on the browser's Cloudflare Access session. Returns the share link. */
-export async function uploadCapture(image: Blob, page: { url: string; title: string }): Promise<string> {
+/** Uploads through the dashboard API, riding on the browser's Cloudflare Access session. */
+export async function uploadCapture(image: StitchedImage, page: { url: string; title: string }): Promise<{ id: string; pageUrl: string }> {
     const host = new URL(page.url).host;
     const response = await fetch(`${dropshotUrl}/api/upload`, {
         method: 'POST',
@@ -15,12 +16,12 @@ export async function uploadCapture(image: Blob, page: { url: string; title: str
         // Access answers a signed-out request with a redirect to its login page.
         redirect: 'manual',
         headers: {
-            'Content-Type': 'image/webp',
-            'X-Filename': encodeURIComponent(`Screenshot of ${host}.webp`),
+            'Content-Type': image.blob.type,
+            'X-Filename': encodeURIComponent(`Screenshot of ${host}.${image.extension}`),
             'X-Title': encodeURIComponent(page.title),
             'X-Target-Url': encodeURIComponent(page.url),
         },
-        body: image,
+        body: image.blob,
     });
 
     if (response.type === 'opaqueredirect' || response.status === 401 || response.status === 403) {
@@ -31,7 +32,5 @@ export async function uploadCapture(image: Blob, page: { url: string; title: str
         throw new Error(`Upload failed (${response.status}).`);
     }
 
-    const drop = (await response.json()) as { pageUrl: string };
-
-    return drop.pageUrl;
+    return (await response.json()) as { id: string; pageUrl: string };
 }

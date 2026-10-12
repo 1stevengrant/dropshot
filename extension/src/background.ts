@@ -1,39 +1,54 @@
-import { clearBadge, showDone, showError, showUploading } from './badge';
+import { captureAndUpload, type CapturedTab } from './captureAndUpload';
 import { captureFullPage } from './captureFullPage';
-import { dropshotUrl } from './config';
-import { copyToClipboard } from './copyToClipboard';
-import { stitchTiles } from './stitchTiles';
-import { SignInRequired, uploadCapture } from './uploadCapture';
+import { captureSelection } from './captureSelection';
+import { runInTab } from './runInTab';
+import { selectArea } from './selectArea';
 
-const busy = new Set<number>();
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({ id: 'capture-page', title: 'Capture full page with Dropshot', contexts: ['page', 'selection', 'image', 'link'] });
+    chrome.contextMenus.create({ id: 'capture-area', title: 'Capture area with Dropshot', contexts: ['page', 'selection', 'image', 'link'] });
+});
 
-chrome.action.onClicked.addListener(async (tab) => {
-    if (tab.id === undefined || !tab.url || busy.has(tab.id)) {
+chrome.action.onClicked.addListener((tab) => capturePage(tab));
+
+chrome.commands.onCommand.addListener((command, tab) => {
+    if (command === 'capture-area' && tab) {
+        void captureArea(tab);
+    }
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (!tab) {
         return;
     }
 
-    const target = { ...tab, id: tab.id, windowId: tab.windowId };
-    busy.add(tab.id);
-
-    try {
-        await clearBadge(tab.id);
-
-        const { tiles, metrics } = await captureFullPage(target);
-        await showUploading(tab.id);
-
-        const link = await uploadCapture(await stitchTiles(tiles, metrics), { url: tab.url, title: tab.title ?? '' });
-        await copyToClipboard(link);
-        await chrome.tabs.create({ url: link, index: tab.index + 1 });
-        await showDone(tab.id);
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error('Dropshot capture failed', error);
-        await showError(tab.id, message);
-
-        if (error instanceof SignInRequired) {
-            await chrome.tabs.create({ url: `${dropshotUrl}/app`, index: tab.index + 1 });
-        }
-    } finally {
-        busy.delete(tab.id);
-    }
+    void (info.menuItemId === 'capture-area' ? captureArea(tab) : capturePage(tab));
 });
+
+async function capturePage(tab: chrome.tabs.Tab): Promise<void> {
+    if (!isCapturable(tab)) {
+        return;
+    }
+
+    await captureAndUpload(tab, (callbacks) => captureFullPage(tab, callbacks));
+}
+
+async function captureArea(tab: chrome.tabs.Tab): Promise<void> {
+    if (!isCapturable(tab)) {
+        return;
+    }
+
+    const selection = await runInTab(tab.id, selectArea, []).catch((error: unknown) => {
+        console.error('Dropshot area selection failed', error);
+
+        return null;
+    });
+
+    if (selection) {
+        await captureAndUpload(tab, (callbacks) => captureSelection(tab, selection, callbacks));
+    }
+}
+
+function isCapturable(tab: chrome.tabs.Tab): tab is CapturedTab {
+    return tab.id !== undefined && Boolean(tab.url);
+}

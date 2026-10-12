@@ -1,50 +1,52 @@
 import { showProgress } from './badge';
-import { hidePinnedElements, preparePage, restorePage, scrollPage, type PageMetrics } from './pageControl';
+import { beginCapture, hidePinnedElements, preparePage, restorePage, scrollPage, type PageMetrics } from './pageControl';
+import { runInTab } from './runInTab';
+import { tabCamera } from './tabCamera';
 
 export interface Tile {
     dataUrl: string;
-    /** Where the page actually stopped scrolling, in CSS pixels. */
+    /** Where the tile's top edge sits relative to the top of the capture, in CSS pixels. */
     offset: number;
 }
 
-/** Matches the Worker and Mac app, so endless pages stay a sane size. */
-const maxHeight = 8192;
-/** Chrome allows two captureVisibleTab calls a second. */
-const captureInterval = 550;
+export interface CaptureCallbacks {
+    onStart: (metrics: PageMetrics) => void;
+    onTile: (tile: Tile) => Promise<void>;
+}
 
 /**
- * Scrolls the tab one viewport at a time and captures each, the way GoFullPage does. The scroll and stitch logic also
- * lives in web/src/worker/screenshots and Dropshot/Capture/WebPageCapture.swift; change them together.
+ * Longer than the Worker and Mac app's 8192, because the tab is already open and nothing else is waiting on it.
+ * Pages past WebP's limit are saved as JPEG instead (see TileStitcher).
  */
-export async function captureFullPage(tab: chrome.tabs.Tab & { id: number; windowId: number }): Promise<{ tiles: Tile[]; metrics: PageMetrics }> {
-    const metrics = await run(tab.id, preparePage, [maxHeight]);
-    const tiles: Tile[] = [];
-    const total = Math.ceil(metrics.height / metrics.viewportHeight);
-    let lastCapture = 0;
+export const maxHeight = 32_000;
+
+/**
+ * Scrolls the tab one screen at a time and captures each, the way GoFullPage does, handing each tile over as it's
+ * taken so long pages never hold every screenshot at once. The scroll and stitch logic also lives in
+ * web/src/worker/screenshots and Dropshot/Capture/WebPageCapture.swift; change them together.
+ */
+export async function captureFullPage(tab: { id: number; windowId: number }, { onStart, onTile }: CaptureCallbacks): Promise<void> {
+    const capture = tabCamera(tab.windowId);
 
     try {
-        for (let step = 0; step < metrics.height; step += metrics.viewportHeight) {
-            await showProgress(tab.id, tiles.length + 1, total);
+        await runInTab(tab.id, beginCapture, [true]);
+        const metrics = await runInTab(tab.id, preparePage, [maxHeight]);
+        const total = Math.ceil(metrics.height / metrics.region.height);
+        let count = 0;
 
-            const offset = await run(tab.id, scrollPage, [step]);
-            await new Promise((resolve) => setTimeout(resolve, Math.max(0, lastCapture + captureInterval - Date.now())));
-            lastCapture = Date.now();
+        onStart(metrics);
 
-            tiles.push({ dataUrl: await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' }), offset });
+        for (let step = 0; step < metrics.height; step += metrics.region.height) {
+            await showProgress(tab.id, ++count, total);
 
-            if (tiles.length === 1) {
-                await run(tab.id, hidePinnedElements, []);
+            const offset = await runInTab(tab.id, scrollPage, [step]);
+            await onTile({ dataUrl: await capture(), offset });
+
+            if (count === 1) {
+                await runInTab(tab.id, hidePinnedElements, []);
             }
         }
     } finally {
-        await run(tab.id, restorePage, []).catch(() => {});
+        await runInTab(tab.id, restorePage, []).catch(() => {});
     }
-
-    return { tiles, metrics };
-}
-
-async function run<Args extends unknown[], Result>(tabId: number, func: (...args: Args) => Result | Promise<Result>, args: Args): Promise<Result> {
-    const [injection] = await chrome.scripting.executeScript({ target: { tabId }, func, args });
-
-    return injection?.result as Result;
 }
