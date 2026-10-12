@@ -1,33 +1,15 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router';
-import { DropDetail } from './DropDetail';
-import { Library } from './Library';
-import { ToastProvider } from './Toasts';
+import { BrowserRouter, Route, Routes } from 'react-router';
+import { ToastProvider } from './components/Toast/ToastProvider';
+import { DropDetail } from './drop/DropDetail';
+import { queryClient } from './lib/queryClient';
+import { Library } from './library/Library';
+import { LibraryRedirect } from './routes/LibraryRedirect';
+import { ShareLinkPage } from './routes/ShareLinkPage';
+import { ShareLinkRedirect } from './routes/ShareLinkRedirect';
 import './styles.css';
-
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 10_000, refetchOnWindowFocus: true } } });
-
-function ShareLinkRedirect() {
-    const { id } = useParams();
-
-    return <Navigate to={`/${id}`} replace />;
-}
-
-/** Old /app/d/<id> addresses move to the share link, which is the one address for a drop. */
-function ShareLinkPage() {
-    const { id } = useParams();
-    window.location.replace(`/${id}`);
-
-    return null;
-}
-
-function LibraryRedirect() {
-    window.location.replace('/app/');
-
-    return null;
-}
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

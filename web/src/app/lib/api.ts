@@ -1,4 +1,4 @@
-import type { Activity, Board, Drop, DropPage, DropQuery, DropUpdate } from '../shared/types';
+import type { Activity, Board, Drop, DropPage, DropQuery, DropUpdate } from '../../shared/types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`/api${path}`, {
@@ -39,6 +39,7 @@ export const api = {
                 ...(title ? { 'X-Title': encodeURIComponent(title) } : {}),
             },
         }),
+    shorten: (url: string, title?: string) => request<Drop>('/links', { method: 'POST', body: JSON.stringify({ url, title }) }),
     replaceFile: (id: string, file: Blob, filename: string) =>
         request<Drop>(`/drops/${id}/file`, {
             method: 'PUT',

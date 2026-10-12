@@ -1,6 +1,6 @@
 import { FileText, File as FileIcon, Link2, Music, FileType } from 'lucide-react';
-import type { Drop } from '../shared/types';
-import { previewUrl } from './api';
+import type { Drop } from '../../shared/types';
+import { previewUrl } from '../lib/api';
 
 export function Thumbnail({ drop, className = '' }: { drop: Drop; className?: string }) {
     if (drop.kind === 'image') {

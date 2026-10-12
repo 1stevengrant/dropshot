@@ -51,22 +51,3 @@ export function Menu({ trigger, children, align = 'center', label }: MenuProps) 
         </div>
     );
 }
-
-export function MenuDivider() {
-    return <li aria-hidden="true" className="pointer-events-none my-1 h-px bg-base-300" />;
-}
-
-export function MenuHeading({ children }: { children: ReactNode }) {
-    return <li className="menu-title text-xs tracking-wide uppercase">{children}</li>;
-}
-
-export function MenuItem({ onSelect, children, danger, checked }: { onSelect: () => void; children: ReactNode; danger?: boolean; checked?: boolean }) {
-    return (
-        <li>
-            <button type="button" role="menuitem" onClick={onSelect} className={danger ? 'text-error' : ''}>
-                {checked !== undefined && <span className="w-4 text-primary">{checked ? '✓' : ''}</span>}
-                {children}
-            </button>
-        </li>
-    );
-}

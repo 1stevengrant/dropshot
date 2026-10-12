@@ -1,141 +1,13 @@
-import type { Activity, Board, Drop, DropKind, DropPage, DropQuery, DropUpdate, Privacy } from '../shared/types';
-import { automaticTags, contentTypeFor, kindFor, normalizeTag, titleFor } from './kinds';
+import type { Drop, DropKind, DropPage, DropQuery, DropUpdate } from '../shared/types';
+import { automaticTags, normalizeTag, titleFor } from './kinds';
 import { hashPassword } from './password';
+import type { DropRow, Env } from './types';
 
-export interface Env {
-    DB: D1Database;
-    BUCKET: R2Bucket;
-    ASSETS: Fetcher;
-    ACCESS_TEAM_DOMAIN: string;
-    ACCESS_AUD: string;
-    KEY_PREFIX: string;
-    DEV_OWNER?: string;
-    OWNER_COOKIE_SECRET?: string;
-}
+export type { DropRow, Env } from './types';
 
-export interface DropRow {
-    id: string;
-    object_key: string;
-    filename: string;
-    title: string;
-    kind: DropKind;
-    content_type: string;
-    size: number;
-    created_at: number;
-    privacy: Privacy;
-    password_hash: string | null;
-    expires_at: number | null;
-    allow_download: number;
-    views: number;
-    target_url: string | null;
-    cta_label: string | null;
-    cta_url: string | null;
-}
-
-export interface Visit {
-    kind: 'view' | 'download';
-    country: string | null;
-    city: string | null;
-    referrer: string | null;
-    browser: string | null;
-}
-
-let inflightSync: Promise<number> | null = null;
-let lastSyncAt = 0;
-
+/** Drop records: listing, lookup, updates, deletion and file replacement. */
 export class Drops {
     constructor(private readonly env: Env, private readonly origin: string) {}
-
-    /**
-     * The Mac app uploads straight to R2, so new objects are registered here. Keys look like `<id>/<filename>`
-     * (or `<id>.<ext>` for short-ID links), under an optional prefix. Keys starting with `_` are ignored.
-     */
-    /**
-     * Registers new uploads, at most every 30 seconds per isolate and never more than one at a time. Listing the whole
-     * bucket on every request made R2 refuse concurrent lists (10058); a failed sync now only delays new drops.
-     */
-    async syncIfStale(maxAgeMs = 30_000): Promise<void> {
-        if (inflightSync) {
-            await inflightSync.catch(() => 0);
-
-            return;
-        }
-
-        if (Date.now() - lastSyncAt < maxAgeMs) {
-            return;
-        }
-
-        inflightSync = this.sync();
-
-        try {
-            await inflightSync;
-            lastSyncAt = Date.now();
-        } catch (error) {
-            console.error('Sync failed', error);
-        } finally {
-            inflightSync = null;
-        }
-    }
-
-    async sync(): Promise<number> {
-        const known = new Set(
-            (await this.env.DB.prepare('SELECT object_key FROM drops').all<{ object_key: string }>()).results.map((row) => row.object_key),
-        );
-
-        const prefix = this.env.KEY_PREFIX ? `${this.env.KEY_PREFIX.replace(/\/+$/, '')}/` : '';
-        let cursor: string | undefined;
-        let added = 0;
-
-        do {
-            const page = await this.env.BUCKET.list({ prefix, cursor, include: ['httpMetadata'] });
-            cursor = page.truncated ? page.cursor : undefined;
-
-            for (const object of page.objects) {
-                if (known.has(object.key)) {
-                    continue;
-                }
-
-                if (await this.register(object, prefix)) {
-                    added++;
-                }
-            }
-        } while (cursor);
-
-        return added;
-    }
-
-    private async register(object: R2Object, prefix: string): Promise<boolean> {
-        const relative = object.key.slice(prefix.length);
-
-        if (!relative || relative.startsWith('_')) {
-            return false;
-        }
-
-        const slash = relative.indexOf('/');
-        const filename = slash === -1 ? relative : relative.slice(slash + 1);
-        const id = slash === -1 ? relative.replace(/\.[^.]+$/, '') : relative.slice(0, slash);
-
-        if (!/^[A-Za-z0-9_-]{3,40}$/.test(id) || !filename) {
-            return false;
-        }
-
-        const contentType = contentTypeFor(filename, object.httpMetadata?.contentType);
-        const kind = kindFor(filename, contentType);
-        const targetUrl = kind === 'link' ? await this.redirectTarget(object.key) : null;
-
-        await this.insert({
-            id,
-            objectKey: object.key,
-            filename,
-            kind,
-            contentType,
-            size: object.size,
-            createdAt: object.uploaded.getTime(),
-            targetUrl,
-        });
-
-        return true;
-    }
 
     async insert(drop: { id: string; objectKey: string; filename: string; kind: DropKind; contentType: string; size: number; createdAt: number; targetUrl: string | null }): Promise<void> {
         const statements = [
@@ -152,14 +24,6 @@ export class Drops {
     }
 
     /** The Mac app stores shortened links as a tiny HTML redirect; recover the destination from it. */
-    private async redirectTarget(key: string): Promise<string | null> {
-        const object = await this.env.BUCKET.get(key);
-        const html = object ? await object.text() : '';
-        const match = html.match(/url=([^"]+)"/i);
-
-        return match ? match[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<') : null;
-    }
-
     async list(query: DropQuery, perPage = 48): Promise<DropPage> {
         const where = ['(d.expires_at IS NULL OR d.expires_at > ?)'];
         const bindings: unknown[] = [Date.now()];
@@ -294,28 +158,6 @@ export class Drops {
         return ids.length;
     }
 
-    async recordVisit(id: string, visit: Visit): Promise<void> {
-        const statements = [
-            this.env.DB.prepare('INSERT INTO drop_views (drop_id, viewed_at, country, city, referrer, browser, kind) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                .bind(id, Date.now(), visit.country, visit.city, visit.referrer, visit.browser, visit.kind),
-        ];
-
-        if (visit.kind === 'view') {
-            statements.push(this.env.DB.prepare('UPDATE drops SET views = views + 1 WHERE id = ?').bind(id));
-        }
-
-        await this.env.DB.batch(statements);
-    }
-
-    async activity(id: string): Promise<Activity[]> {
-        const rows = await this.env.DB.prepare(
-            'SELECT id, kind, viewed_at, country, city, referrer, browser FROM drop_views WHERE drop_id = ? ORDER BY viewed_at DESC LIMIT 200',
-        ).bind(id).all<{ id: number; kind: 'view' | 'download'; viewed_at: number; country: string | null; city: string | null; referrer: string | null; browser: string | null }>();
-
-        return rows.results.map((row) => ({ id: row.id, kind: row.kind, viewedAt: row.viewed_at, country: row.country, city: row.city, referrer: row.referrer, browser: row.browser }));
-    }
-
-    /** Swaps a drop's file (used when Markup saves over the original). The link stays the same. */
     async replaceFile(row: DropRow, filename: string, contentType: string, body: ReadableStream): Promise<void> {
         const prefix = this.env.KEY_PREFIX ? `${this.env.KEY_PREFIX.replace(/\/+$/, '')}/` : '';
         const key = `${prefix}${row.id}/${filename}`;
@@ -328,46 +170,6 @@ export class Drops {
         await this.env.DB.prepare('UPDATE drops SET object_key = ?, filename = ?, content_type = ?, size = ? WHERE id = ?')
             .bind(key, filename, contentType, object.size, row.id)
             .run();
-    }
-
-    async tags(): Promise<{ tag: string; count: number }[]> {
-        const rows = await this.env.DB.prepare(
-            'SELECT t.tag, COUNT(*) AS count FROM drop_tags t JOIN drops d ON d.id = t.drop_id WHERE d.expires_at IS NULL OR d.expires_at > ? GROUP BY t.tag ORDER BY t.tag',
-        ).bind(Date.now()).all<{ tag: string; count: number }>();
-
-        return rows.results;
-    }
-
-    async boards(): Promise<Board[]> {
-        const rows = await this.env.DB.prepare(
-            'SELECT b.id, b.name, COUNT(bd.drop_id) AS count FROM boards b LEFT JOIN board_drops bd ON bd.board_id = b.id GROUP BY b.id ORDER BY b.name COLLATE NOCASE',
-        ).all<Board>();
-
-        return rows.results;
-    }
-
-    async createBoard(name: string): Promise<Board> {
-        const trimmed = name.trim().slice(0, 80);
-        const row = await this.env.DB.prepare('INSERT INTO boards (name, created_at) VALUES (?, ?) ON CONFLICT (name) DO UPDATE SET name = excluded.name RETURNING id, name')
-            .bind(trimmed, Date.now())
-            .first<Board>();
-
-        return row!;
-    }
-
-    async deleteBoard(id: number): Promise<void> {
-        await this.env.DB.batch([
-            this.env.DB.prepare('DELETE FROM board_drops WHERE board_id = ?').bind(id),
-            this.env.DB.prepare('DELETE FROM boards WHERE id = ?').bind(id),
-        ]);
-    }
-
-    async addToBoard(boardId: number, dropIds: string[]): Promise<void> {
-        await this.env.DB.batch(dropIds.map((dropId) => this.env.DB.prepare('INSERT OR IGNORE INTO board_drops (board_id, drop_id) VALUES (?, ?)').bind(boardId, dropId)));
-    }
-
-    async removeFromBoard(boardId: number, dropId: string): Promise<void> {
-        await this.env.DB.prepare('DELETE FROM board_drops WHERE board_id = ? AND drop_id = ?').bind(boardId, dropId).run();
     }
 
     pageUrl(id: string): string {
