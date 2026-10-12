@@ -48,7 +48,7 @@ app.get('/app/*', async (c) => {
 
 app.get('/api/drops', async (c) => {
     const drops = c.get('drops');
-    await drops.sync();
+    await drops.syncIfStale();
 
     const query: DropQuery = {
         q: c.req.query('q') || undefined,
@@ -237,7 +237,7 @@ async function viewableDrop(c: Context<App>): Promise<DropRow | Response> {
 
     if (!row) {
         // A drop uploaded moments ago by the Mac app may not be registered yet.
-        await drops.sync();
+        await drops.syncIfStale(5_000);
         row = await drops.find(id);
     }
 
@@ -329,6 +329,6 @@ export default {
 
     async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
         const drops = new Drops(env, '');
-        ctx.waitUntil(drops.sync().then(() => drops.purgeExpired()));
+        ctx.waitUntil(drops.sync().catch((error) => console.error('Scheduled sync failed', error)).then(() => drops.purgeExpired()));
     },
 } satisfies ExportedHandler<Env>;

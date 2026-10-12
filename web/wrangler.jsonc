@@ -19,7 +19,7 @@
       "migrations_dir": "./migrations"
     }
   ],
-  "triggers": { "crons": ["17 * * * *"] },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     // Cloudflare Access team domain and application audience tag, from Zero Trust › Access › Applications.
     "ACCESS_TEAM_DOMAIN": "ghijk.cloudflareaccess.com",

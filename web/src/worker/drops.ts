@@ -29,6 +29,9 @@ export interface DropRow {
     target_url: string | null;
 }
 
+let inflightSync: Promise<number> | null = null;
+let lastSyncAt = 0;
+
 export class Drops {
     constructor(private readonly env: Env, private readonly origin: string) {}
 
@@ -36,6 +39,33 @@ export class Drops {
      * The Mac app uploads straight to R2, so new objects are registered here. Keys look like `<id>/<filename>`
      * (or `<id>.<ext>` for short-ID links), under an optional prefix. Keys starting with `_` are ignored.
      */
+    /**
+     * Registers new uploads, at most every 30 seconds per isolate and never more than one at a time. Listing the whole
+     * bucket on every request made R2 refuse concurrent lists (10058); a failed sync now only delays new drops.
+     */
+    async syncIfStale(maxAgeMs = 30_000): Promise<void> {
+        if (inflightSync) {
+            await inflightSync.catch(() => 0);
+
+            return;
+        }
+
+        if (Date.now() - lastSyncAt < maxAgeMs) {
+            return;
+        }
+
+        inflightSync = this.sync();
+
+        try {
+            await inflightSync;
+            lastSyncAt = Date.now();
+        } catch (error) {
+            console.error('Sync failed', error);
+        } finally {
+            inflightSync = null;
+        }
+    }
+
     async sync(): Promise<number> {
         const known = new Set(
             (await this.env.DB.prepare('SELECT object_key FROM drops').all<{ object_key: string }>()).results.map((row) => row.object_key),
