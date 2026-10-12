@@ -35,6 +35,8 @@
 	<string>public.app-category.productivity</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Dropshot shows your camera in a bubble when you record with the camera.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Dropshot records your microphone in screen recordings when you enable it.</string>
 	<key>NSScreenCaptureUsageDescription</key>

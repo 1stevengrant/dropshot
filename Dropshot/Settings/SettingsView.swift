@@ -190,6 +190,27 @@ private struct CaptureSettings: View {
 
                 Toggle("Record system audio", isOn: $preferences.recordSystemAudio)
             }
+
+            Section {
+                Picker("Camera", selection: $preferences.camera) {
+                    Text("Automatic (\(CameraChoice.automatic?.localizedName ?? "none"))").tag(CameraChoice.systemDefault)
+
+                    Divider()
+
+                    ForEach(CameraChoice.devices, id: \.id) { device in
+                        Text(device.name).tag(device.id)
+                    }
+                }
+
+                Picker("Bubble size", selection: $preferences.cameraSize) {
+                    ForEach(CameraSize.allCases) { Text($0.title).tag($0) }
+                }
+            } header: {
+                Text("Camera bubble")
+            } footer: {
+                Text("Used by Record with Camera. The bubble appears in the recording and can be dragged while you record.")
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }
@@ -203,6 +224,7 @@ private struct ShortcutSettings: View {
             KeyboardShortcuts.Recorder("Screenshot and annotate:", name: .captureAndAnnotate)
             KeyboardShortcuts.Recorder("Record video:", name: .recordVideo)
             KeyboardShortcuts.Recorder("Record GIF:", name: .recordGIF)
+            KeyboardShortcuts.Recorder("Record with camera:", name: .recordWithCamera)
             KeyboardShortcuts.Recorder("Finish recording:", name: .finishRecording)
             KeyboardShortcuts.Recorder("Pause or resume recording:", name: .pauseRecording)
             KeyboardShortcuts.Recorder("Mute or unmute microphone:", name: .muteRecording)

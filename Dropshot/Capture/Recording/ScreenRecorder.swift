@@ -31,6 +31,7 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
     @ObservationIgnored private var ending: CheckedContinuation<Bool, Never>?
     @ObservationIgnored private var writer: RecordingWriter?
     @ObservationIgnored private var controlBar: RecordingControlBar?
+    @ObservationIgnored private var bubble: CameraBubble?
 
     /// Recorded time so far, excluding pauses.
     func elapsed(at date: Date = .now) -> TimeInterval {
@@ -44,7 +45,8 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
     }
 
     /// Returns the finished movie, or nil when the user cancels at any point.
-    func record(microphone: String, systemAudio: Bool, showClicks: Bool, countdown seconds: Int) async throws -> URL? {
+    /// `camera` (device and size) adds the camera bubble to the recording.
+    func record(microphone: String, systemAudio: Bool, showClicks: Bool, countdown seconds: Int, camera: (device: String, size: CameraSize)? = nil) async throws -> URL? {
         guard state == .idle, !isPicking else {
             return nil
         }
@@ -63,7 +65,7 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
             throw error
         }
 
-        guard let target = picked else {
+        guard var target = picked else {
             return nil
         }
 
@@ -71,6 +73,12 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
         hasMicrophone = microphone != MicrophoneChoice.none
 
         defer { reset() }
+
+        if let camera {
+            let bubble = try await CameraBubble.show(camera: camera.device, size: camera.size, in: target.frame)
+            self.bubble = bubble
+            target = target.including([try await Self.shareableWindow(bubble.windowID)])
+        }
 
         if seconds > 0 {
             let countdown = Task { try await CountdownOverlay.run(seconds: seconds, over: target.frame) }
@@ -168,6 +176,21 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
         return (stream, writer)
     }
 
+    /// A window only shows up in shareable content once the window server has it on screen, which can take a moment.
+    private static func shareableWindow(_ id: CGWindowID) async throws -> SCWindow {
+        for _ in 0..<20 {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+
+            if let window = content.windows.first(where: { $0.windowID == id }) {
+                return window
+            }
+
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        throw CaptureError.failed("Couldn't add the camera bubble to the recording.")
+    }
+
     /// Video encoders need even dimensions.
     private static func even(_ value: CGFloat) -> CGFloat {
         max(2, (value / 2).rounded(.down) * 2)
@@ -239,6 +262,8 @@ final class ScreenRecorder: NSObject, SCStreamDelegate {
     private func reset() {
         controlBar?.close()
         controlBar = nil
+        bubble?.close()
+        bubble = nil
         countdown = nil
         writer = nil
         clock = RecordingClock()

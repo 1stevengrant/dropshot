@@ -79,7 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// dropshot://screenshot, dropshot://annotate, dropshot://record, dropshot://gif, dropshot://stop, dropshot://pause, dropshot://mute,
+    /// dropshot://screenshot, dropshot://annotate, dropshot://record (dropshot://record?camera=1 adds the camera bubble), dropshot://gif, dropshot://stop, dropshot://pause, dropshot://mute,
     /// dropshot://clipboard, dropshot://note, dropshot://code, dropshot://upload?path=/absolute/file,
     /// dropshot://capture-url (asks for a URL) or dropshot://capture-url?url=https://example.com
     private func handle(_ url: URL) {
@@ -99,7 +99,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "annotate":
             actions.screenshot(annotate: true)
         case "record":
-            actions.startRecording(as: .video)
+            let camera = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "camera" }?.value == "1"
+            actions.startRecording(as: .video, camera: camera)
         case "gif":
             actions.startRecording(as: .gif)
         case "stop":
