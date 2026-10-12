@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let actions = CaptureActions()
     private var statusItemController: StatusItemController?
+    private let screenshotWatcher = ScreenshotWatcher()
 
     static func main() {
         let app = NSApplication.shared
@@ -22,9 +23,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         Hotkeys.register(actions)
         Notifier.requestAuthorization()
+        observeAutoUpload()
 
         if Preferences.shared.storageConfiguration == nil {
             SettingsOpener.open()
+        }
+    }
+
+    /// Runs the screenshot watcher only while "Automatically upload macOS screenshots" is on.
+    private func observeAutoUpload() {
+        withObservationTracking {
+            if Preferences.shared.autoUploadScreenshots {
+                screenshotWatcher.start()
+            } else {
+                screenshotWatcher.stop()
+            }
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.observeAutoUpload()
+            }
         }
     }
 
