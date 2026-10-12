@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Files, LayoutGrid, Plus, Tag, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import type { DropQuery } from '../../shared/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -8,6 +8,7 @@ import { Wordmark } from '../components/Wordmark';
 import { api } from '../lib/api';
 import { kinds } from './kinds';
 import { SidebarItem } from './SidebarItem';
+import { useCreateBoard } from './useCreateBoard';
 
 interface SidebarProps {
     query: DropQuery;
@@ -24,18 +25,28 @@ export function Sidebar({ query, filter, boards, tags, onBoardsChanged }: Sideba
     const [deletingBoard, setDeletingBoard] = useState<{ id: number; name: string } | null>(null);
     const isAll = !query.kind && !query.tag && !query.board && !query.trash;
 
-    async function createBoard() {
-        if (!name.trim()) {
-            setCreating(false);
+    const create = useCreateBoard((board) => filter({ board: String(board.id) }));
+    // Enter submits the form and the input then loses focus, which would create the board a second time.
+    const submitted = useRef(false);
 
+    function startCreating() {
+        submitted.current = false;
+        setCreating(true);
+    }
+
+    function createBoard() {
+        if (submitted.current) {
             return;
         }
 
-        const board = await api.createBoard(name);
+        submitted.current = true;
+        const boardName = name.trim();
         setName('');
         setCreating(false);
-        onBoardsChanged();
-        filter({ board: String(board.id) });
+
+        if (boardName) {
+            create.mutate(boardName);
+        }
     }
 
     async function deleteBoard(id: number) {
@@ -67,7 +78,7 @@ export function Sidebar({ query, filter, boards, tags, onBoardsChanged }: Sideba
             <section>
                 <div className="mb-1 flex items-center justify-between px-2 text-xs font-semibold tracking-wide text-muted uppercase">
                     Boards
-                    <button type="button" onClick={() => setCreating(true)} title="Create a board" className="btn btn-ghost btn-xs btn-square">
+                    <button type="button" onClick={startCreating} title="Create a board" className="btn btn-ghost btn-xs btn-square">
                         <Plus size={15} />
                     </button>
                 </div>
