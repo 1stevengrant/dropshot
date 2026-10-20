@@ -81,15 +81,40 @@ final class WebPageCapture: NSObject, WKNavigationDelegate {
                 scale = CGFloat(tile.width) / Self.width
                 context = CGContext(data: nil, width: Int(Self.width * scale), height: Int(height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
 
-                // Fixed and sticky headers, banners and chat buttons belong in the first tile only. Pinned elements
-                // as tall as the viewport are backgrounds (a hero's video, say), and hiding those leaves holes.
+                // Fixed and sticky headers, banners and chat buttons belong in the first tile only. Large pinned
+                // elements that content scrolls over are backgrounds (a hero's video, say), and hiding those leaves
+                // holes. Sidebars, drawers and dialogs would repeat down the page, so they go too.
                 _ = try await webView.callAsyncJavaScript("""
-                    for (const element of document.querySelectorAll('*')) {
-                        const pinned = ['fixed', 'sticky'].includes(getComputedStyle(element).position);
+                    const isBackground = (element) => {
+                        const rect = element.getBoundingClientRect();
+                        const left = Math.max(rect.left, 0);
+                        const top = Math.max(rect.top, 0);
+                        const width = Math.min(rect.right, window.innerWidth) - left;
+                        const height = Math.min(rect.bottom, window.innerHeight) - top;
 
-                        if (pinned && element.getBoundingClientRect().height < window.innerHeight / 2) {
-                            element.style.setProperty('visibility', 'hidden', 'important');
+                        if (width < window.innerWidth / 2 || height < window.innerHeight / 2) {
+                            return false;
                         }
+
+                        // Content scrolls over a background, while drawers and dialogs sit on top wherever you look.
+                        for (const x of [0.25, 0.5, 0.75]) {
+                            for (const y of [0.25, 0.5, 0.75]) {
+                                const hit = document.elementFromPoint(left + width * x, top + height * y);
+
+                                if (hit && !element.contains(hit)) {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        return false;
+                    };
+
+                    // Decided before hiding anything, so hidden elements don't change what isBackground sees.
+                    const pinned = [...document.querySelectorAll('*')].filter((element) => ['fixed', 'sticky'].includes(getComputedStyle(element).position) && !isBackground(element));
+
+                    for (const element of pinned) {
+                        element.style.setProperty('visibility', 'hidden', 'important');
                     }
                     """, contentWorld: .page)
             }
