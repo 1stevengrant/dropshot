@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dropshot: menu bar uploads to your own bucket</title>
+<meta name="description" content="A macOS menu bar app for screenshots, recordings, GIFs and files. Uploads to your own S3 compatible storage and copies the link before the upload finishes.">
+<meta property="og:title" content="Dropshot">
+<meta property="og:description" content="Screenshots, recordings and files, straight to your own bucket. macOS 15+.">
+<meta name="theme-color" content="#3b6ef5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --soft:#eef3fd; --line:#e4e7ec; --line-2:#cbd5e1;
+  --ink:#16181d; --ink-2:#475569; --ink-3:#94a3b8;
+  --accent:#3b6ef5; --accent-2:#2f5ee0; --accent-soft:#e8effd; --accent-ink:#ffffff; --ok:#16a34a;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif; --mono:"Geist Mono",ui-monospace,monospace;
+  --wrap:1140px; --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px -8px rgba(15,23,42,.10);
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+code,kbd,.mono{font-family:var(--mono)}
+::selection{background:var(--accent);color:#fff}
+
+/* logo */
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(160deg,#5b8cf5,var(--accent-2));display:grid;place-items:center;box-shadow:0 4px 10px -2px rgba(59,110,245,.45)}
+.logo svg{width:16px;height:16px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;text-decoration:none;color:var(--accent);letter-spacing:-.02em}
+nav ul{display:flex;gap:28px;list-style:none;padding:0;font-size:14px;color:var(--ink-2);font-weight:500}
+nav ul a{text-decoration:none}
+nav ul a:hover{color:var(--accent)}
+.gh{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:8px 14px;border:1px solid var(--line);border-radius:10px;text-decoration:none;background:var(--surface)}
+.gh:hover{border-color:var(--line-2)}
+@media(max-width:720px){nav ul{display:none}}
+
+/* hero */
+.hero{padding:88px 0 96px;position:relative;overflow-x:clip;background:radial-gradient(1100px 520px at 75% -10%,#dfe9fd,transparent 70%)}
+.hero .intro{text-align:center;max-width:820px;margin:0 auto}
+.pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--accent-2);background:var(--accent-soft);border:1px solid #d3e0fb;padding:6px 12px;border-radius:999px}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+h1{font-weight:700;font-size:clamp(40px,6.4vw,72px);line-height:1.02;letter-spacing:-.035em;margin:22px 0 22px}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{font-size:19px;color:var(--ink-2);max-width:56ch;margin:0 auto}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:10px;font-weight:600;text-decoration:none;font-size:15px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px rgba(59,110,245,.6)}
+.btn-primary:hover{background:var(--accent-2)}
+.btn-ghost{border:1px solid var(--line);background:var(--surface)}
+.btn-ghost:hover{border-color:var(--line-2)}
+.meta{margin-top:18px;font-size:13px;color:var(--ink-3)}
+
+/* app window mock */
+.app{margin:64px auto 0;max-width:1000px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 70px -30px rgba(15,23,42,.35);overflow:hidden;position:relative}
+.chrome{display:flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-bottom:1px solid var(--line);background:#fafbfd}
+.chrome i{width:11px;height:11px;border-radius:50%;background:#e2e8f0}
+.chrome span{margin:0 auto;font-size:12px;color:var(--ink-3);font-family:var(--mono);padding:3px 12px;border-radius:6px;background:#f1f4f9}
+.app-body{display:grid;grid-template-columns:200px 1fr;min-height:420px}
+.side{border-right:1px solid var(--line);padding:16px 12px;font-size:13px;color:var(--ink-2)}
+.side .item{display:flex;justify-content:space-between;padding:7px 10px;border-radius:8px}
+.side .item.on{background:var(--accent-soft);color:var(--accent);font-weight:500;border:1px solid #d3e0fb}
+.side h6{font-size:10.5px;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin:16px 10px 6px}
+.side small{color:var(--ink-3)}
+.main{padding:18px 20px;background:#fbfcfe}
+.main-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.main-head b{font-size:19px;letter-spacing:-.02em}
+.main-head b small{font-weight:400;color:var(--ink-3);font-size:14px;margin-left:6px}
+.upl{background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.dc{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.dc .img{height:84px}
+.dc .txt{padding:9px 11px 11px;font-size:12px}
+.dc .txt b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc .txt span{color:var(--accent);font-size:11.5px}
+.dc.dz{border:1.5px dashed var(--line-2);background:transparent;display:grid;place-items:center;text-align:center;color:var(--ink-2);font-size:12px;font-weight:500}
+.dc.dz svg{display:block;margin:0 auto 6px;color:var(--ink-3)}
+@media(max-width:760px){.app-body{grid-template-columns:1fr}.side{display:none}.cards{grid-template-columns:1fr 1fr}.cards .hide-sm{display:none}}
+.toast{position:absolute;right:22px;bottom:22px;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 30px rgba(15,23,42,.3);animation:pop 4s ease-in-out infinite}
+.toast code{font-size:12px;color:#93b4f7}
+.toast::before{content:"✓";color:#86efac}
+@keyframes pop{0%,10%{opacity:0;transform:translateY(8px)}18%,80%{opacity:1;transform:none}92%,100%{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.toast{animation:none}}
+
+/* sections */
+section{padding:96px 0}
+section.alt{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-head{max-width:640px;margin-bottom:48px}
+.num{font-size:13px;font-weight:600;color:var(--accent);display:block;margin-bottom:12px}
+h2{font-weight:700;font-size:clamp(30px,4.2vw,44px);line-height:1.08;letter-spacing:-.03em}
+h2 em{font-style:normal;color:var(--accent)}
+.sec-head p{color:var(--ink-2);font-size:17px;margin-top:14px}
+
+/* timeline */
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.timeline div{padding:26px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+section.alt .timeline div{background:var(--bg)}
+.timeline b{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:6px;font-weight:500;display:inline-block;margin-bottom:14px}
+.timeline h3{font-size:18px;font-weight:600;margin-bottom:6px;letter-spacing:-.01em}
+.timeline p{color:var(--ink-2);font-size:15px}
+@media(max-width:800px){.timeline{grid-template-columns:1fr}}
+
+/* features */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 24px 28px;box-shadow:var(--shadow)}
+.card h3{font-size:17px;font-weight:600;margin:16px 0 6px;letter-spacing:-.01em}
+.card p{color:var(--ink-2);font-size:15px}
+.card ul{margin-top:12px;padding-left:18px;color:var(--ink-2);font-size:14px}
+.card ul li::marker{color:var(--accent)}
+.glyph{width:40px;height:40px;border-radius:10px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+
+/* hotkeys */
+.keys{display:grid;grid-template-columns:repeat(2,1fr);gap:0 48px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:8px 28px}
+.key{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);font-size:15px}
+.key:nth-last-child(-n+2){border-bottom:0}
+.key span{color:var(--ink-2)}
+.caps{display:flex;gap:5px;flex:none}
+.caps kbd{min-width:30px;height:30px;padding:0 8px;display:grid;place-items:center;border-radius:7px;background:var(--surface);border:1px solid var(--line-2);border-bottom-width:2px;font-size:13px;color:var(--ink)}
+@media(max-width:760px){.keys{grid-template-columns:1fr}.key:nth-last-child(2){border-bottom:1px solid var(--line)}}
+.url-list{margin-top:24px;display:flex;flex-wrap:wrap;gap:8px}
+.url-list code{font-size:13px;padding:6px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent-2)}
+
+/* storage */
+.storage{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.store{border:1px solid var(--line);border-radius:14px;padding:24px;background:var(--surface);box-shadow:var(--shadow)}
+.store b{font-weight:600;font-size:19px;display:block;letter-spacing:-.01em}
+.store small{color:var(--ink-3);font-size:13px}
+@media(max-width:800px){.storage{grid-template-columns:1fr 1fr}}
+
+/* install */
+.install{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.install>*{min-width:0}
+@media(max-width:860px){.install{grid-template-columns:1fr}}
+.term{border:1px solid #1e293b;border-radius:14px;overflow:hidden;background:#0f172a;box-shadow:var(--shadow)}
+.term header{display:flex;align-items:center;gap:7px;padding:12px 14px;border-bottom:1px solid #1e293b;font-family:var(--mono);font-size:12px;color:#64748b}
+.term header i{width:10px;height:10px;border-radius:50%;background:#334155}
+.term header span{margin-left:8px}
+.term pre{padding:20px;font:13.5px/1.75 var(--mono);overflow-x:auto;color:#e2e8f0}
+.term pre .c{color:#64748b}
+.term pre .p{color:#7aa2f7}
+.steps{list-style:none;padding:0;counter-reset:s;margin-top:24px;display:grid;gap:14px}
+.steps li{counter-increment:s;display:flex;gap:14px;color:var(--ink-2);font-size:15px;align-items:flex-start}
+.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;display:grid;place-items:center}
+
+/* footer */
+footer{border-top:1px solid var(--line);background:var(--surface);padding:48px 0;color:var(--ink-3);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px}
+footer p{max-width:58ch}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><span class="logo"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2.5c-.3 0-.6.15-.8.4C9.4 5.2 5 10.9 5 14.8 5 18.8 8.1 22 12 22s7-3.2 7-7.2c0-3.9-4.4-9.6-6.2-11.9a1 1 0 0 0-.8-.4Z"/></svg></span>Dropshot</a>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#hotkeys">Hotkeys</a></li>
+      <li><a href="#storage">Storage</a></li>
+      <li><a href="#install">Install</a></li>
+    </ul>
+    <a class="gh" href="https://github.com/1stevengrant/dropshot">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="intro">
+      <span class="pill">macOS 15+ · open source</span>
+      <h1>Capture it. Drop it.<br><em>Link's already copied.</em></h1>
+      <p class="lede">A menu bar uploader for screenshots, recordings, GIFs and files, stored in your own bucket and organised in a web app you control.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#install">Build from source →</a>
+        <a class="btn btn-ghost" href="https://github.com/1stevengrant/dropshot">View on GitHub</a>
+      </div>
+      <p class="meta">Cloudflare R2 · AWS S3 · Backblaze B2 · MinIO. No account, no subscription.</p>
+    </div>
+
+    <div class="app" aria-hidden="true">
+      <div class="chrome"><i></i><i></i><i></i><span>d.example.com/app</span></div>
+      <div class="app-body">
+        <div class="side">
+          <div class="item on">My drops</div>
+          <div class="item">Images</div>
+          <div class="item">Videos</div>
+          <div class="item">Notes</div>
+          <div class="item">Links</div>
+          <div class="item">Files</div>
+          <h6>BOARDS</h6>
+          <div class="item">Inspiration <small>12</small></div>
+          <h6>TAGS</h6>
+          <div class="item">screenshot <small>2192</small></div>
+          <div class="item">recording <small>342</small></div>
+          <div class="item">video <small>134</small></div>
+        </div>
+        <div class="main">
+          <div class="main-head"><b>My drops<small>3,000</small></b><span class="upl">Upload file</span></div>
+          <div class="cards">
+            <div class="dc dz"><div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 18a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 11a3.5 3.5 0 0 1-1 7M12 12v8M9 15l3-3 3 3"/></svg>Drop files here</div></div>
+            <div class="dc"><div class="img" style="background:linear-gradient(135deg,#1e293b,#475569 60%,#94a3b8)"></div><div class="txt"><b>Homepage hero review.png</b><span>d.example.com/R7mXq2Lp</span></div></div>
+            <div class="dc"><div class="img" style="background:linear-gradient(135deg,#3a6fe6,#93c5fd)"></div><div class="txt"><b>Checkout flow walkthrough.mov</b><span>d.example.com/vK3tNw8a</span></div></div>
+            <div class="dc hide-sm"><div class="img" style="background:linear-gradient(135deg,#065f46,#34d399 70%,#d1fae5)"></div><div class="txt"><b>Pricing page feedback.png</b><span>d.example.com/Hd5pYc0e</span></div></div>
+            <div class="dc"><div class="img" style="background:repeating-linear-gradient(0deg,#f1f5f9 0 8px,#e2e8f0 8px 10px)"></div><div class="txt"><b>Sprint notes.md</b><span>d.example.com/sQ9fBz4u</span></div></div>
+            <div class="dc"><div class="img" style="background:var(--accent-soft);display:grid;place-items:center;color:var(--accent);font:600 22px var(--sans)">T</div><div class="txt"><b>Release checklist</b><span>d.example.com/Lw2eJr6n</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="toast">Link copied <code>d.example.com/xK3p</code></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="num">01 · Instant links</span><h2>Paste before it's <em>finished.</em></h2>
+      <p>The link lands on your clipboard the moment an upload starts. Anyone who opens it early gets a holding page that refreshes until the drop is ready.</p>
+    </div>
+    <div class="timeline">
+      <div><b>0.0s</b><h3>Capture</h3><p>Hotkey, drag, done. Native macOS selection for screenshots, ScreenCaptureKit for video.</p></div>
+      <div><b>0.1s</b><h3>Link copied</h3><p>Paste into Slack, email or a ticket straight away. No waiting on a progress bar.</p></div>
+      <div><b>…</b><h3>Upload lands</h3><p>The "still uploading" page swaps itself for the drop. Prefer the old way? Turn instant links off.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="num">02 · Features</span><h2>Everything you'd <em>reach for.</em></h2>
+      <p>Screenshots, annotated mark-ups, screen recordings with a camera bubble, GIFs, notes and plain files, all from one icon in the menu bar.</p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/></svg></div>
+        <h3>Screenshot &amp; annotate</h3>
+        <p>Drag a region or press Space for a window, then mark it up.</p>
+        <ul><li>Arrows, shapes, pen, highlighter, text</li><li>Pixelate, step numbers, emoji stamps</li><li>Undo/redo; upload, copy or save</li></ul>
+      </div>
+      <div class="card">
+        <div class="glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></div>
+        <h3>Screen recording</h3>
+        <p>Area, window or full screen, with a countdown and a control bar that never appears in the video.</p>
+        <ul><li>Pause (paused time is cut), mute, delete</li><li>System audio + mic mixed to one track</li><li>Draggable round camera bubble</li></ul>
+      </div>
+      <div class="card">
+        <div class="glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10v4M8 10h3M8 12h2M13 10v4M16 10v4M16 10h2.5"/></svg></div>
+        <h3>GIFs</h3>
+        <p>Same capture flow as video, output as a looping GIF for docs, PRs and issue trackers.</p>
+      </div>
+      <div class="card">
+        <div class="glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg></div>
+        <h3>Drop anything</h3>
+        <p>Drag files or text onto the icon, upload the clipboard, or use the Finder Services menu.</p>
+        <ul><li>Folders and multiple files zipped</li><li>URLs on the clipboard get shortened</li><li>Auto upload native ⌘⇧3/4/5 captures</li></ul>
+      </div>
+      <div class="card">
+        <div class="glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <h3>Private by choice</h3>
+        <p>Set defaults for new drops: public, password or private, self destruct timers and download permission.</p>
+        <ul><li>Passwords hashed on the Mac</li><li>Plaintext stays in your Keychain</li></ul>
+      </div>
+      <div class="card">
+        <div class="glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div>
+        <h3>Chrome extension</h3>
+        <p>Full-page captures of the tab you're on, including signed in pages, stitched like a scroll capture.</p>
+        <ul><li>Captures inner scroll panels too</li><li>Pick an element or drag an area</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="hotkeys">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="num">03 · Hotkeys</span><h2>Never touch the <em>menu.</em></h2>
+      <p>Every core action has a global shortcut. Prefer scripting? Drive it from Raycast, Shortcuts or a shell with <code>dropshot://</code> URLs.</p>
+    </div>
+    <div class="keys">
+      <div class="key"><span>Upload clipboard</span><div class="caps"><kbd>⌥</kbd><kbd>D</kbd></div></div>
+      <div class="key"><span>Record video</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>5</kbd></div></div>
+      <div class="key"><span>Screenshot</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>4</kbd></div></div>
+      <div class="key"><span>Record GIF</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>2</kbd></div></div>
+      <div class="key"><span>Screenshot &amp; annotate</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>3</kbd></div></div>
+      <div class="key"><span>Finish recording</span><div class="caps"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>D</kbd></div></div>
+      <div class="key"><span>Upload file</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>6</kbd></div></div>
+      <div class="key"><span>Pause / resume</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>7</kbd></div></div>
+      <div class="key"><span>New note</span><div class="caps"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>N</kbd></div></div>
+      <div class="key"><span>Mute microphone</span><div class="caps"><kbd>⌥</kbd><kbd>M</kbd></div></div>
+    </div>
+    <div class="url-list">
+      <code>dropshot://screenshot</code><code>dropshot://annotate</code><code>dropshot://record?camera=1</code><code>dropshot://gif</code><code>dropshot://stop</code><code>dropshot://clipboard</code><code>dropshot://upload?path=…</code>
+    </div>
+  </div>
+</section>
+
+<section id="storage" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="num">04 · Storage</span><h2>Your bucket. <em>Your links.</em></h2>
+      <p>Point Dropshot at any S3 compatible endpoint and a public base URL. Files live where you put them, served from your own domain, with no third party to go down, re-authenticate or change its pricing.</p>
+    </div>
+    <div class="storage">
+      <div class="store"><b>Cloudflare R2</b><small>custom domain or r2.dev</small></div>
+      <div class="store"><b>AWS S3</b><small>any region</small></div>
+      <div class="store"><b>Backblaze B2</b><small>S3 compatible API</small></div>
+      <div class="store"><b>MinIO</b><small>self-hosted</small></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="num">05 · Install</span><h2>Up and running in <em>minutes.</em></h2>
+      <p>No signed release yet, so build it with Xcode. You'll need XcodeGen and macOS 15 or later.</p>
+    </div>
+    <div class="install">
+      <div>
+        <div class="term">
+          <header><i></i><i></i><i></i><span>~/dropshot</span></header>
+<pre><span class="c"># clone and build the Mac app</span>
+<span class="p">$</span> git clone https://github.com/1stevengrant/dropshot
+<span class="p">$</span> cd dropshot
+<span class="p">$</span> xcodegen generate
+<span class="p">$</span> xcodebuild -project Dropshot.xcodeproj \
+    -scheme Dropshot -derivedDataPath build build
+<span class="p">$</span> open build/Build/Products/Debug/Dropshot.app</pre>
+        </div>
+        <ol class="steps">
+          <li>Settings opens on first launch. Under Storage, add endpoint, bucket, keys and public base URL.</li>
+          <li>Hit Test Upload to confirm objects are publicly readable.</li>
+          <li>Grant Screen Recording when macOS asks on your first capture.</li>
+        </ol>
+      </div>
+      <div class="term">
+        <header><i></i><i></i><i></i><span>~/dropshot/extension</span></header>
+<pre><span class="c"># optional: the Chrome extension</span>
+<span class="p">$</span> cd extension
+<span class="p">$</span> npm install
+<span class="p">$</span> npm run build
+
+<span class="c"># chrome://extensions → Developer mode</span>
+<span class="c"># → Load unpacked → extension/dist</span>
+
+<span class="c"># full page   ⌥⇧D</span>
+<span class="c"># area        ⌥⇧S  (or right-click)</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Dropshot is an independent, clean room rebuild of a Droplr style menu bar app. No Droplr code, assets or keys are included. Not affiliated with Droplr.</p>
+    <p>Built by <a href="https://ghijk.nz">GHIJK</a> · <a href="https://github.com/1stevengrant/dropshot">Source on GitHub</a></p>
+  </div>
+  
+</footer>
+
+</body>
+</html>
