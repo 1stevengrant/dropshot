@@ -2,6 +2,8 @@
 
 A clean room rebuild of the Droplr menu bar app for macOS 15 and later. It uploads to your own S3 compatible storage (Cloudflare R2, AWS S3, Backblaze B2, MinIO) instead of Droplr's service.
 
+See the project site at [1stevengrant.github.io/dropshot](https://1stevengrant.github.io/dropshot/) for features, hotkeys and setup.
+
 The behaviour was derived from Droplr 5.9.19 using REA with the Ghidra provider. The findings are in `re/SPEC.md`. No Droplr code, assets or keys are included.
 
 ## Build
