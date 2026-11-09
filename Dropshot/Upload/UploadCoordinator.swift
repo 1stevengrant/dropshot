@@ -260,9 +260,16 @@ final class UploadCoordinator {
         url.standardizedFileURL.path.hasPrefix(DropStore.capturesDirectory.standardizedFileURL.path + "/")
     }
 
-    /// Folders and app bundles become zip archives, matching how a browser can serve them.
+    /// Folders and app bundles become zip archives, matching how a browser can serve them. HEIC photos become JPEGs,
+    /// because only Safari can display HEIC; if the conversion fails the original is uploaded as it is.
     private func prepare(_ url: URL) async throws -> URL {
         let values = try url.resourceValues(forKeys: [.isDirectoryKey])
+
+        if values.isDirectory != true, HEICConverter.needsConversion(url) {
+            let jpeg = try Self.captureFile(named: HEICConverter.jpegFilename(for: url))
+
+            return HEICConverter.convert(url, to: jpeg) ? jpeg : url
+        }
 
         if values.isDirectory != true {
             return url
